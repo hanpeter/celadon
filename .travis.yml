@@ -1,29 +1,23 @@
----
 language: python
 python:
-  - "3.9"
+- '3.9'
 branches:
   only:
   - master
-  - /^\d+\.\d+\.\d+$/  # Use sem var
+  - "/^\\d+\\.\\d+\\.\\d+$/"
 install:
-  # Print out the version of Python and pip
-  - python --version
-  - pip --version
-  # Install dependencies
-  - pip install pipenv
-  - pipenv install --dev
+- python --version
+- pip --version
+- pip install pipenv
+- pipenv install --dev
 script:
-  # Linter
-  - pycodestyle
-  # Unit tests
-  - pytest
+- pycodestyle
+- pytest
 deploy:
   provider: heroku
   api_key:
-    secure: JS5mKejMdV4SEF92YZblQ3IP5JKDDKPTk3TZyXuO80+gNF1K71HwiBds6f/tLAIdPgNTt0oH2qx58p806K4Se35/giWM032tShOkINmdpoTbc2NO11+Vh/UwUB+kdpeMCm9egC1opanpkcFEGl0nu1dO9s1w0XJHKC6LD8xbRCLjHYHPGEMcWCuHjR8vyC2qizVPPJ/SrOsUd+YUdhHdJ32OETf5BsIJ0cV1/Fs5IhxKhVAzEznnZAm/8pChJTt0WkI5eEIMNm+yk5mTU0P4jJpIkIHZKTX6p2EMX/wxugkf0SOWlFx0NWY0xF6Ak2LEnZi6mpJDUSMCeaNYeBuWqYGzD7s5YL82163B1BA6R4+jpDBJTOQsyzAvoZPiMDCRupwOCODVQDRttNnTfvc7tYShi0jrcmMPEXB4EVfDg9IFn5Ojb6QiLBv9xpmDBamVXML9KhG3xX48puLYldUqra5walM5bwQ59eHP/yHBTyChBCeV3OzWMlOqCBtZ24FfAQ2U4JJMUQT1pGbCVfFl0prUe9TM6vTtY/qnYW/w8yTIDYsxGYqS0qTbugJSgidHliJFOofdr5ARGrjmCzyO/hUx+8/kubyPTuWQoAq6Py4y4b1qgNjhX+I+6NjDv2w4U3HTPlAPUEGus83KLHRU6V/iZ3MnlmnqKYhlja3PhIs=
+    secure: lyQA8sVDb9sKXkH3QZTWOSTq4xQXy0IvmDjzUTGb4KCXvvB0CAagS6k7fOot6qXTP51aYuT+P4OMBCFwf4Z1D1PSHPYkQhIj3+WAy2ekZTw6ZA52Ds67pw6MEGLRd0+HUbFsMiVhkyrD/v2XYbIrd7WLJg1FNV3JjrTBKwU3Urj3UUTlliyyKHh8Y/f66Q7hd76xNtTSfpwxiiWAYbzYh/sIjhqxIrCNHm+1P0nDIQeiHj9d0z6kelmC0qBJBpG0EzXHCkCYLWHBaR+8eqLRfqlr4EQBoOeaONHv8eJMNtpb3nN3C2Ay0kE5gBM6g/Q1z6PgVYFunS/PVbv6khFO+9ei0BA2vuCv2r4sxSFZEP7MN9l5akyPYos/RfMqaJIjpQdKsMeV9qtaP2gEG1djmlSQjshX5wDA987t2DTwlWqH8IT5ARhMhZCVhjxWhRz1gDfhb2Ai/odajBW7NGi66HWkQDF4AnMD8mwnqkdGTyfCsnE6c4JBlTp9IxOR25x+5//u4ZZsqORjaI+GK8n2cDTrFqzAq1VcG56yX246+wttfxORovn5oJbkJDj8BPvzWAMr6WBwFLO+LDYRIy5tllgapV+Ei6Kp1uSF7CfHUO0pCxTBAyoU9QR2BGKC9uhWMO9w6T82jNb2aTSgsvyWIg/8pVPov7WFrE3mhMvahj0=
   app: phan-celadon
   on:
     tags: true
     repo: hanpeter/celadon
-
