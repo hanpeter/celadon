@@ -1,3 +1,6 @@
+# -*- coding: utf-8 -*-
+
+
 class Application(object):
     def __init__(self, database):
         self._database = database
