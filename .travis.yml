@@ -1,20 +1,23 @@
----
 language: python
 python:
-  - "3.9"
+- '3.9'
 branches:
   only:
   - master
-  - /^\d+\.\d+\.\d+$/  # Use sem var
+  - "/^\\d+\\.\\d+\\.\\d+$/"
 install:
-  # Print out the version of Python and pip
-  - python --version
-  - pip --version
-  # Install dependencies
-  - pip install pipenv
-  - pipenv install --dev
+- python --version
+- pip --version
+- pip install pipenv
+- pipenv install --dev
 script:
-  # Linter
-  - pycodestyle
-  # Unit tests
-  - pytest
+- pycodestyle
+- pytest
+deploy:
+  provider: heroku
+  api_key:
+    secure: lyQA8sVDb9sKXkH3QZTWOSTq4xQXy0IvmDjzUTGb4KCXvvB0CAagS6k7fOot6qXTP51aYuT+P4OMBCFwf4Z1D1PSHPYkQhIj3+WAy2ekZTw6ZA52Ds67pw6MEGLRd0+HUbFsMiVhkyrD/v2XYbIrd7WLJg1FNV3JjrTBKwU3Urj3UUTlliyyKHh8Y/f66Q7hd76xNtTSfpwxiiWAYbzYh/sIjhqxIrCNHm+1P0nDIQeiHj9d0z6kelmC0qBJBpG0EzXHCkCYLWHBaR+8eqLRfqlr4EQBoOeaONHv8eJMNtpb3nN3C2Ay0kE5gBM6g/Q1z6PgVYFunS/PVbv6khFO+9ei0BA2vuCv2r4sxSFZEP7MN9l5akyPYos/RfMqaJIjpQdKsMeV9qtaP2gEG1djmlSQjshX5wDA987t2DTwlWqH8IT5ARhMhZCVhjxWhRz1gDfhb2Ai/odajBW7NGi66HWkQDF4AnMD8mwnqkdGTyfCsnE6c4JBlTp9IxOR25x+5//u4ZZsqORjaI+GK8n2cDTrFqzAq1VcG56yX246+wttfxORovn5oJbkJDj8BPvzWAMr6WBwFLO+LDYRIy5tllgapV+Ei6Kp1uSF7CfHUO0pCxTBAyoU9QR2BGKC9uhWMO9w6T82jNb2aTSgsvyWIg/8pVPov7WFrE3mhMvahj0=
+  app: phan-celadon
+  on:
+    tags: true
+    repo: hanpeter/celadon
