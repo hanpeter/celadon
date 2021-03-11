@@ -1,6 +1,8 @@
+# -*- coding: utf-8 -*-
+
 from flask import Flask, request, jsonify
 from src.db import Database
-from src.app import Application
+from src.application import Application
 from src.models import Purchaser, Purchase, Item
 
 
@@ -47,6 +49,7 @@ def purchase(id=None):
             return jsonify(app.update_purchase(purchase))
         elif request.method == 'GET':
             return jsonify(app.get_purchase(id))
+
 
 @server.route('/item', methods=['GET'])
 @server.route('/item/<int:id>', methods=['GET', 'PUT'])

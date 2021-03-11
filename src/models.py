@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from textwrap import dedent
 from datetime import datetime
 
@@ -25,17 +27,23 @@ class Purchaser(object):
         return cls(d.get('id'), d.get('name', ''), d.get('is_active', True))
 
 
-
 class Purchase(object):
     SELECT_ALL = dedent('''\
         SELECT purchases.id, purchases.purchase_date, purchases.cost, purchasers.id, purchasers.name
         FROM purchases INNER JOIN purchasers ON purchases.purchaser_id = purchasers.id
     ''')
     SELECT_ONE = SELECT_ALL + " WHERE purchases.id = %s"
-    INSERT = "INSERT INTO purchases (purchase_date, cost, purchaser_id) VALUES (%(purchase_date)s, %(cost)s, %(purchaser_id)s) RETURNING id"
-    UPDATE = "UPDATE purchases SET purchase_date = %(purchase_date)s, cost = %(cost)s, purchaser_id = %(purchaser_id)s WHERE id = %(id)s"
+    INSERT = dedent('''\
+        INSERT INTO purchases (purchase_date, cost, purchaser_id)
+        VALUES (%(purchase_date)s, %(cost)s, %(purchaser_id)s) RETURNING id
+    ''')
+    UPDATE = dedent('''\
+        UPDATE purchases
+        SET purchase_date = %(purchase_date)s, cost = %(cost)s, purchaser_id = %(purchaser_id)s
+        WHERE id = %(id)s
+    ''')
 
-    def __init__(self, id, purchase_date, cost, purchaser_id, purchaser_name, items = []):
+    def __init__(self, id, purchase_date, cost, purchaser_id, purchaser_name, items=[]):
         self.id = id
         self.purchase_date = purchase_date
         self.cost = float(cost)
@@ -60,14 +68,28 @@ class Purchase(object):
         if purchaser_id is None:
             raise ValueError('Invalid purchaser ID')
 
-        return cls(d.get('id'), purchase_date, d.get('cost', 0), purchaser_id, '', [Item.from_dict(i) for i in d.get('items', [])])
+        return cls(
+            d.get('id'),
+            purchase_date,
+            d.get('cost', 0),
+            purchaser_id,
+            '',
+            [Item.from_dict(i) for i in d.get('items', [])],
+        )
 
 
 class Item(object):
     SELECT_ALL = 'SELECT * FROM items'
     SELECT_ONE = SELECT_ALL + " WHERE id = %s"
-    INSERT = "INSERT INTO items (brand, name, quantity, cost) VALUES (%(brand)s, %(name)s, %(quantity)s, %(cost)s) RETURNING id"
-    UPDATE = "UPDATE items SET brand = %(brand)s, name = %(name)s, quantity = %(quantity)s, cost = %(cost)s WHERE id = %(id)s"
+    INSERT = dedent('''\
+        INSERT INTO items (brand, name, quantity, cost)
+        VALUES (%(brand)s, %(name)s, %(quantity)s, %(cost)s) RETURNING id
+    ''')
+    UPDATE = dedent('''\
+        UPDATE items
+        SET brand = %(brand)s, name = %(name)s, quantity = %(quantity)s, cost = %(cost)s
+        WHERE id = %(id)s
+    ''')
 
     def __init__(self, id, brand, name, quantity, cost):
         self.id = id
