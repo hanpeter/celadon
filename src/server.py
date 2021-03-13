@@ -8,7 +8,7 @@ from src.models import Purchaser, Purchase, Item
 
 
 server = Flask(__name__)
-CORS(app=server, origin="*", allow_headers="*")
+CORS(app=server, origin="*", allow_headers=['content-type'])
 
 database = Database()
 app = Application(database)
