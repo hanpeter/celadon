@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from src.db import Database
 from src.application import Application
 from src.models import Purchaser, Purchase, Item
 
 
 server = Flask(__name__)
+CORS(server)
 database = Database()
 app = Application(database)
 
