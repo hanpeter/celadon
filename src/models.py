@@ -62,7 +62,7 @@ class Purchase(object):
 
     @classmethod
     def from_dict(cls, d):
-        purchase_date = datetime.strptime(d.get('purchase_date', ''), "%Y-%m-%dT%H:%M:%S%z")
+        purchase_date = datetime.strptime(d.get('purchase_date', ''), "%Y-%m-%d")
 
         purchaser_id = d.get('purchaser_id')
         if purchaser_id is None:
