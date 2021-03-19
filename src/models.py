@@ -54,7 +54,7 @@ class Purchase(object):
     def to_dict(self):
         return {
             'id': self.id,
-            'purchase_date': self.purchase_date,
+            'purchase_date': self.purchase_date.strftime("%Y-%m-%d"),
             'cost': self.cost,
             'purchaser_id': self.purchaser_id,
             'purchaser_name': self.purchaser_name,
