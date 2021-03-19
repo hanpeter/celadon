@@ -4,29 +4,6 @@ from textwrap import dedent
 from datetime import datetime
 
 
-class Purchaser(object):
-    SELECT_ALL = 'SELECT * FROM purchasers'
-    SELECT_ONE = SELECT_ALL + " WHERE purchasers.id = %s"
-    INSERT = "INSERT INTO purchasers (name) VALUES (%(name)s) RETURNING id"
-    UPDATE = "UPDATE purchasers SET name = %(name)s, is_active = %(is_active)s WHERE id = %(id)s"
-
-    def __init__(self, id, name, is_active):
-        self.id = id
-        self.name = name
-        self.is_active = is_active
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'is_active': self.is_active,
-        }
-
-    @classmethod
-    def from_dict(cls, d):
-        return cls(d.get('id'), d.get('name', ''), d.get('is_active', True))
-
-
 class Purchase(object):
     SELECT_ALL = dedent('''\
         SELECT purchases.id, purchases.purchase_date, purchases.cost, purchasers.id, purchasers.name
@@ -76,37 +53,3 @@ class Purchase(object):
             '',
             [Item.from_dict(i) for i in d.get('items', [])],
         )
-
-
-class Item(object):
-    SELECT_ALL = 'SELECT * FROM items'
-    SELECT_ONE = SELECT_ALL + " WHERE id = %s"
-    INSERT = dedent('''\
-        INSERT INTO items (brand, name, quantity, cost)
-        VALUES (%(brand)s, %(name)s, %(quantity)s, %(cost)s) RETURNING id
-    ''')
-    UPDATE = dedent('''\
-        UPDATE items
-        SET brand = %(brand)s, name = %(name)s, quantity = %(quantity)s, cost = %(cost)s
-        WHERE id = %(id)s
-    ''')
-
-    def __init__(self, id, brand, name, quantity, cost):
-        self.id = id
-        self.brand = brand
-        self.name = name
-        self.quantity = quantity
-        self.cost = float(cost)
-
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'brand': self.brand,
-            'name': self.name,
-            'quantity': self.quantity,
-            'cost': self.cost,
-        }
-
-    @classmethod
-    def from_dict(cls, d):
-        return cls(d.get('id'), d.get('brand', ''), d.get('name', ''), d.get('quantity', 0), d.get('cost', 0))
