@@ -2,9 +2,9 @@
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from src.db import Database
-from src.application import Application
-from src.models import Purchaser, Purchase, Item
+from celadon.db import Database
+from celadon.application import Application
+from celadon.models import Purchaser, Purchase, Item
 
 
 server = Flask(__name__)

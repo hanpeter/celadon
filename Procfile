@@ -1,1 +1,1 @@
-web: gunicorn src.server:server
+web: gunicorn celadon.server:server

@@ -2,7 +2,7 @@
 
 import os
 import psycopg2
-from src.models import Purchaser, Purchase, Item
+from celadon.models import Purchaser, Purchase, Item
 
 
 class Database(object):
