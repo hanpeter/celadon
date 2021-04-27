@@ -2,6 +2,7 @@
 
 from textwrap import dedent
 from datetime import datetime
+from celadon.models.item import Item
 
 
 class Purchase(object):
