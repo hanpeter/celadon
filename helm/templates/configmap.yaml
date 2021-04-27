@@ -1,0 +1,11 @@
+{{- if .Values.database.initdbScripts }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-database-init-scripts
+  namespace: {{ .Release.Namespace }}
+data:
+{{- with .Values.database.initdbScripts }}
+{{ toYaml . | indent 2 }}
+{{- end }}
+{{- end }}

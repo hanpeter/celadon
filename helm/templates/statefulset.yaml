@@ -1,0 +1,65 @@
+{{- if .Values.database.enabled }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Release.Name }}-postgres
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ .Release.Name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+spec:
+  serviceName: {{ .Release.Name }}-postgres
+  replicas: {{ .Values.database.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Release.Name }}-postgres
+      app.kubernetes.io/instance: {{ .Release.Name }}-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Release.Name }}-postgres
+        app.kubernetes.io/instance: {{ .Release.Name }}-postgres
+    spec:
+      containers:
+      - name: postgres
+        image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.database.port }}
+        env:
+        - name: POSTGRESQL_PORT_NUMBER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-database
+              key: database_port
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-database
+              key: database_name
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-database
+              key: database_username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-database
+              key: database_password
+        volumeMounts:
+          {{- if .Values.database.initdbScripts }}
+          - name: custom-init-scripts
+            mountPath: /docker-entrypoint-initdb.d/
+          {{- end }}
+          - name: data
+            mountPath: /var/lib/postgresql/data
+      volumes:
+        {{- if .Values.database.initdbScripts }}
+        - name: custom-init-scripts
+          configMap:
+            name: {{ .Release.Name }}-database-init-scripts
+        {{- end }}
+        - name: data
+          emptyDir: {}
+{{- end }}
