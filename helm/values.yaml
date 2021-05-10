@@ -1,0 +1,50 @@
+config:
+  gunicornArgs: ''
+  databaseUrl: ''
+
+hpa:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 6
+
+database:
+  enabled: true
+  replicas: 1
+  image:
+    repository: postgres
+    tag: 12
+    pullPolicy: IfNotPresent
+  hostname: ''
+  dbName: celadon
+  port: '5432'
+  username: ''
+  password: ''
+  initdbScripts:
+    create_purchasers.sql: |
+      CREATE TABLE IF NOT EXISTS purchasers (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        is_active BOOLEAN DEFAULT true
+      );
+      INSERT INTO purchasers (name) VALUES ('Eunjin');
+      INSERT INTO purchasers (name) VALUES ('Hyojin');
+    create_purchases.sql: |
+      CREATE TABLE IF NOT EXISTS purchases (
+        id SERIAL PRIMARY KEY,
+        purchase_date TIMESTAMPTZ,
+        cost DECIMAL(100, 2),
+        purchaser_id INT REFERENCES purchasers (id)
+      );
+    create_items.sql: |
+      CREATE TABLE IF NOT EXISTS items (
+        id SERIAL PRIMARY KEY,
+        brand TEXT,
+        name TEXT,
+        quantity INT,
+        cost DECIMAL(100, 4)
+      );
+
+image:
+  repository: nginx
+  tag: latest
+  pullPolicy: IfNotPresent
