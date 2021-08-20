@@ -26,9 +26,11 @@ setup(
     author='Peter Han',
     author_email='git@peterhan.ca',
     description='API server for inventory management',
+    long_description=long_description,
     url=REPO_URL,
     download_url=DOWNLOAD_URL,
     packages=find_packages(exclude=['tests']),
+    license='MIT',
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Framework :: Flask',
@@ -36,4 +38,5 @@ setup(
         'Programming Language :: Python',
         'Programming Language :: Python :: 3.9',
     ],
+    python_requires='~=3.9',
 )
