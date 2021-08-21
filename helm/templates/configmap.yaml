@@ -1,11 +1,17 @@
 {{- if .Values.database.initdbScripts }}
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ .Release.Name }}-database-init-scripts
-  namespace: {{ .Release.Namespace }}
+  name: {{ .Values.config.name }}-database-init-scripts
+  labels:
+    app.kubernetes.io/name: {{ .Values.config.name }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
+    app.kubernetes.io/component: database
 data:
-{{- with .Values.database.initdbScripts }}
-{{ toYaml . | indent 2 }}
-{{- end }}
+  {{- with .Values.database.initdbScripts }}
+    {{- toYaml . | nindent 2 }}
+  {{- end }}
 {{- end }}
