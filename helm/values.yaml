@@ -20,7 +20,7 @@ resources:
 
 hpa:
   # -- Enable Horizontal Pod Autoscaler
-  enabled: false
+  enabled: true
   # -- Minimum allowed number of pods
   minReplicas: 1
   # -- Maximum allowed number of pods
