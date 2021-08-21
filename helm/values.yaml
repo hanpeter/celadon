@@ -30,9 +30,6 @@ hpa:
   # -- Target memory utilization of a pod (based on the resources defined above)
   avgMemoryUtilizationPercentage: 50
 
-deployment:
-  workingDir: ''
-
 database:
   # -- Enable database
   enabled: true
@@ -89,3 +86,13 @@ service:
   type: NodePort
   # -- Which port does the service expose?
   port: 5000
+
+localDev:
+  # -- Enable configurations to allow local development
+  enabled: false
+  # -- Path to the source code
+  # 20210821: As of now, for Windows, use the format `/run/desktop/mnt/host/c/path/to/file`
+  # https://github.com/kubernetes/kubernetes/issues/59876#issuecomment-849846580
+  path: ''
+  # -- Hostname of the local Kubernetes node
+  hostname: 'docker-desktop'

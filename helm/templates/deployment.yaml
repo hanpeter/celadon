@@ -43,3 +43,16 @@ spec:
                   key: database_url
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.localDev.enabled }}
+          volumeMounts:
+            - name: local-vol
+              mountPath: /celadon
+              readOnly: true
+          {{- end }}
+      {{- if .Values.localDev.enabled }}
+      volumes:
+        - name: local-vol
+          hostPath:
+            path: {{ .Values.localDev.path }}
+            type: Directory
+      {{- end }}
