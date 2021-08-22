@@ -42,7 +42,7 @@ database:
     tag: 12
     # -- Docker pull policy to use
     pullPolicy: IfNotPresent
-  hostname: 'celadon-postgres.celadon.svc.cluster.local'
+  hostname: 'celadon-database.celadon'
   dbName: celadon
   port: '5432'
   username: ''

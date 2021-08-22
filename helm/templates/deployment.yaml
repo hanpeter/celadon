@@ -30,12 +30,12 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: 5000
+            - containerPort: {{ .Values.config.port }}
           env:
             - name: PORT
-              value: "5000"
+              value: "{{ .Values.config.port }}"
             - name: GUNICORN_CMD_ARGS
-              value: {{ .Values.config.gunicornArgs }}
+              value: "{{ .Values.config.gunicornArgs }}"
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
