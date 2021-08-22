@@ -1,24 +1,53 @@
 config:
+  # -- Name of this application
+  name: celadon
+  # -- Which port does this application listen on?
+  port: 5000
+  # -- Any additional gunicorn arguments, passed via `GUNICORN_CMD_ARGS` env var
   gunicornArgs: ''
-  databaseUrl: ''
+
+resources:
+  limits:
+    # -- Pod CPU limit
+    cpu: 1
+    # -- Pod memory limit
+    memory: 512Mi
+  requests:
+    # -- Amount of CPU needed for this pod
+    cpu: 500m
+    # -- Amount of memory needed for this pod
+    memory: 256Mi
 
 hpa:
-  enabled: false
+  # -- Enable Horizontal Pod Autoscaler
+  enabled: true
+  # -- Minimum allowed number of pods
   minReplicas: 1
+  # -- Maximum allowed number of pods
   maxReplicas: 6
+  # -- Target CPU utilization of a pod (based on the resources defined above)
+  avgCPUUtilizationPercentage: 50
+  # -- Target memory utilization of a pod (based on the resources defined above)
+  avgMemoryUtilizationPercentage: 50
 
 database:
+  # -- Enable database
   enabled: true
+  # -- Number of replicas for the database statefulset
   replicas: 1
   image:
+    # -- Docker image of the database
     repository: postgres
+    # -- Docker tag/version of the database
     tag: 12
+    # -- Docker pull policy to use
     pullPolicy: IfNotPresent
-  hostname: ''
+  hostname: 'celadon-database.celadon'
   dbName: celadon
   port: '5432'
   username: ''
   password: ''
+  # -- Any SQL scripts to be run at the launch of database
   initdbScripts:
     create_purchasers.sql: |
       CREATE TABLE IF NOT EXISTS purchasers (
@@ -45,6 +74,25 @@ database:
       );
 
 image:
-  repository: nginx
+  # -- Docker image of the application
+  repository: celadon
+  # -- Docker tag/version of the application
   tag: latest
+  # -- Docker pull policy to use
   pullPolicy: IfNotPresent
+
+service:
+  # -- Service type
+  type: NodePort
+  # -- Which port does the service expose?
+  port: 5000
+
+localDev:
+  # -- Enable configurations to allow local development
+  enabled: false
+  # -- Path to the source code
+  # 20210821: As of now, for Windows, use the format `/run/desktop/mnt/host/c/path/to/file`
+  # https://github.com/kubernetes/kubernetes/issues/59876#issuecomment-849846580
+  path: ''
+  # -- Hostname of the local Kubernetes node
+  hostname: 'docker-desktop'

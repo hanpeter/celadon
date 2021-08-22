@@ -1,22 +1,21 @@
+{{- if .Values.database.enabled }}
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.config.name }}
+  name: {{ .Values.config.name }}-database
   labels:
     app.kubernetes.io/name: {{ .Values.config.name }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/version: {{ .Chart.AppVersion }}
     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
-    app.kubernetes.io/component: application
+    app.kubernetes.io/component: database
 spec:
-  type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.config.port }}
+    - port: {{ .Values.database.port }}
+      targetPort: {{ .Values.database.port }}
       protocol: TCP
   selector:
-    app.kubernetes.io/name: {{ .Values.config.name }}
+    app.kubernetes.io/name: {{ .Values.config.name }}-database
     app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/version: {{ .Chart.AppVersion }}
-
+{{- end }}
