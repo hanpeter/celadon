@@ -1,4 +1,4 @@
-config:
+application:
   # -- Name of this application
   name: celadon
   # -- Which port does this application listen on?

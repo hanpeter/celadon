@@ -3,24 +3,24 @@
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
-  name: {{ .Values.config.name }}-database
+  name: {{ .Values.application.name }}-database
   labels:
-    app.kubernetes.io/name: {{ .Values.config.name }}
+    app.kubernetes.io/name: {{ .Values.application.name }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/version: {{ .Chart.AppVersion }}
     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     app.kubernetes.io/component: database
 spec:
-  serviceName: {{ .Values.config.name }}-database
+  serviceName: {{ .Values.application.name }}-database
   replicas: {{ .Values.database.replicas }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ .Values.config.name }}-database
+      app.kubernetes.io/name: {{ .Values.application.name }}-database
       app.kubernetes.io/instance: {{ .Release.Name }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ .Values.config.name }}-database
+        app.kubernetes.io/name: {{ .Values.application.name }}-database
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/version: {{ .Chart.AppVersion }}
         helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
@@ -36,22 +36,22 @@ spec:
             - name: POSTGRESQL_PORT_NUMBER
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.config.name }}-database
+                  name: {{ .Values.application.name }}-database
                   key: database_port
             - name: POSTGRES_DB
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.config.name }}-database
+                  name: {{ .Values.application.name }}-database
                   key: database_name
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.config.name }}-database
+                  name: {{ .Values.application.name }}-database
                   key: database_username
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.config.name }}-database
+                  name: {{ .Values.application.name }}-database
                   key: database_password
           volumeMounts:
             {{- if .Values.database.initdbScripts }}
@@ -64,7 +64,7 @@ spec:
         {{- if .Values.database.initdbScripts }}
         - name: custom-init-scripts
           configMap:
-            name: {{ .Values.config.name }}-database-init-scripts
+            name: {{ .Values.application.name }}-database-init-scripts
         {{- end }}
         - name: data
           emptyDir: {}
