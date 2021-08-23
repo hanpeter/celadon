@@ -19,4 +19,3 @@ spec:
     app.kubernetes.io/name: {{ .Values.application.name }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/version: {{ .Chart.AppVersion }}
-
