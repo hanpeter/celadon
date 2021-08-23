@@ -3,9 +3,9 @@
 apiVersion: autoscaling/v2beta2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ .Values.config.name }}
+  name: {{ .Values.application.name }}
   labels:
-    app.kubernetes.io/name: {{ .Values.config.name }}
+    app.kubernetes.io/name: {{ .Values.application.name }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/version: {{ .Chart.AppVersion }}
     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
@@ -16,7 +16,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ .Values.config.name }}
+    name: {{ .Values.application.name }}
   metrics:
     - type: Resource
       resource:

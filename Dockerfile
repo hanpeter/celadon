@@ -20,5 +20,4 @@ RUN pipenv install --system --deploy
 COPY . .
 
 # Run the server
-EXPOSE 5000
 ENTRYPOINT ["gunicorn", "celadon.server:server"]

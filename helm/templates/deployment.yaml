@@ -2,9 +2,9 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.config.name }}
+  name: {{ .Values.application.name }}
   labels:
-    app.kubernetes.io/name: {{ .Values.config.name }}
+    app.kubernetes.io/name: {{ .Values.application.name }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/version: {{ .Chart.AppVersion }}
     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
@@ -13,33 +13,32 @@ spec:
   replicas: {{ .Values.hpa.minReplicas }}
   selector:
     matchLabels:
-      app.kubernetes.io/name: {{ .Values.config.name }}
+      app.kubernetes.io/name: {{ .Values.application.name }}
       app.kubernetes.io/instance: {{ .Release.Name }}
-      app.kubernetes.io/version: {{ .Chart.AppVersion }}
   template:
     metadata:
       labels:
-        app.kubernetes.io/name: {{ .Values.config.name }}
+        app.kubernetes.io/name: {{ .Values.application.name }}
         app.kubernetes.io/instance: {{ .Release.Name }}
         app.kubernetes.io/version: {{ .Chart.AppVersion }}
         helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
         app.kubernetes.io/component: application
     spec:
       containers:
-        - name: {{ .Values.config.name }}
+        - name: {{ .Values.application.name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
-            - containerPort: {{ .Values.config.port }}
+            - containerPort: {{ .Values.application.port }}
           env:
             - name: PORT
-              value: "{{ .Values.config.port }}"
+              value: "{{ .Values.application.port }}"
             - name: GUNICORN_CMD_ARGS
-              value: "{{ .Values.config.gunicornArgs }}"
+              value: "{{ .Values.application.gunicornArgs }}"
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.config.name }}-database
+                  name: {{ .Values.application.name }}-database
                   key: database_url
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

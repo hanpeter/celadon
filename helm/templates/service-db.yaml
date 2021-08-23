@@ -3,9 +3,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ .Values.config.name }}-database
+  name: {{ .Values.application.name }}-database
   labels:
-    app.kubernetes.io/name: {{ .Values.config.name }}
+    app.kubernetes.io/name: {{ .Values.application.name }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/version: {{ .Chart.AppVersion }}
     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
@@ -16,6 +16,6 @@ spec:
       targetPort: {{ .Values.database.port }}
       protocol: TCP
   selector:
-    app.kubernetes.io/name: {{ .Values.config.name }}-database
+    app.kubernetes.io/name: {{ .Values.application.name }}-database
     app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
