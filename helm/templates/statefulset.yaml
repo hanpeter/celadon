@@ -54,14 +54,14 @@ spec:
                   name: {{ .Values.application.name }}-database
                   key: database_password
           volumeMounts:
-            {{- if .Values.database.initdbScripts }}
+            {{- if .Values.database.initdb }}
             - name: custom-init-scripts
               mountPath: /docker-entrypoint-initdb.d/
             {{- end }}
             - name: data
               mountPath: /var/lib/postgresql/data
       volumes:
-        {{- if .Values.database.initdbScripts }}
+        {{- if .Values.database.initdb }}
         - name: custom-init-scripts
           configMap:
             name: {{ .Values.application.name }}-database-init-scripts

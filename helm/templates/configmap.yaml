@@ -1,4 +1,4 @@
-{{- if .Values.database.initdbScripts }}
+{{- if .Values.database.initdb }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -11,7 +11,5 @@ metadata:
     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     app.kubernetes.io/component: database
 data:
-  {{- with .Values.database.initdbScripts }}
-    {{- toYaml . | nindent 2 }}
-  {{- end }}
+  initdb.sql: "{{ .Values.database.initdb }}"
 {{- end }}
