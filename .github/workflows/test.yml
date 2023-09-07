@@ -1,0 +1,34 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.9
+          cache: pipenv
+      - name: Install pipenv
+        run: pip install pipenv --user
+      - name: Install dependencies
+        run: pipenv install --dev
+      - name: Lint
+        run: pipenv run pycodestyle
+      - name: Test
+        run: pipenv run pytest
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
