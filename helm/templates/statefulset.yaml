@@ -28,8 +28,8 @@ spec:
     spec:
       containers:
         - name: postgres
-          image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          image: "{{ .Values.database.image.repository }}:{{ .Values.database.image.tag | default .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.database.image.pullPolicy | default .Values.image.pullPolicy }}
           ports:
             - containerPort: {{ .Values.database.port }}
           env:
