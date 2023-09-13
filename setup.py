@@ -25,7 +25,7 @@ setup(
     version=__version__,
     author='Peter Han',
     author_email='git@peterhan.ca',
-    description='API server for inventory management',
+    description='API server for customer management',
     long_description=long_description,
     url=REPO_URL,
     download_url=DOWNLOAD_URL,
