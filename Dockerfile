@@ -1,23 +1,29 @@
-FROM python:3.9
-
-# Setup env
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONFAULTHANDLER=1
+FROM python:3.11-alpine as builder
 
 # Set up working directory
 WORKDIR /celadon
 
-# Install dependencies
-# XXX: Copy only Pipfile & Pipfile.lock first to take
-#      advantage of Docker build cache
-COPY Pipfile* ./
-RUN pip install pipenv
-RUN pipenv install --system --deploy
+# Set up Poetry
+ENV POETRY_NO_INTERACTION=1 \
+    POETRY_VIRTUALENVS_IN_PROJECT=1 \
+    POETRY_NO_CACHE=1
+RUN pip install poetry==1.6.1
 
-# Bundle source code
-COPY . .
+# Install dependencies
+COPY pyproject.toml poetry.lock README.md ./
+RUN poetry install --without dev --no-root
+
+FROM python:3.11-alpine as runner
+
+# Set up working directory
+WORKDIR /celadon
+
+# Setup environment
+ENV PATH="/celadon/.venv/bin:$PATH"
+
+# Copy the source code
+COPY --from=builder /celadon/.venv ./.venv
+COPY celadon ./celadon
 
 # Run the server
 ENTRYPOINT ["gunicorn", "celadon.server:server"]
