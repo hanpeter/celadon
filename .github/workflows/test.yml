@@ -15,19 +15,19 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
-      - name: Set up Python 3.9
+      - name: Install poetry
+        run: pip install poetry==1.6.1
+      - name: Set up Python 3.11
         uses: actions/setup-python@v4
         with:
-          python-version: 3.9
-          cache: pipenv
-      - name: Install pipenv
-        run: pip install pipenv --user
+          python-version: 3.11
+          cache: poetry
       - name: Install dependencies
-        run: pipenv install --dev
+        run: poetry install --with dev --no-root
       - name: Lint
-        run: pipenv run pycodestyle
+        run: poetry run pycodestyle
       - name: Test
-        run: pipenv run pytest
+        run: poetry run pytest
 
 concurrency:
   cancel-in-progress: true
