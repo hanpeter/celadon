@@ -1,4 +1,4 @@
-FROM python:3.11-alpine@sha256:5d769f990397afbb2aca24b0655e404c0f2806d268f454b052e81e39d87abf42 as builder
+FROM python:3.11-alpine@sha256:537b7980bc438b55f3a27806e034ba50cb8e45338596e3b1928e6b25c1169a60 as builder
 
 # Set up working directory
 WORKDIR /celadon
@@ -13,7 +13,7 @@ RUN pip install poetry==1.6.1
 COPY pyproject.toml poetry.lock README.md ./
 RUN poetry install --without dev --no-root
 
-FROM python:3.11-alpine@sha256:5d769f990397afbb2aca24b0655e404c0f2806d268f454b052e81e39d87abf42 as runner
+FROM python:3.11-alpine@sha256:537b7980bc438b55f3a27806e034ba50cb8e45338596e3b1928e6b25c1169a60 as runner
 
 # Set up working directory
 WORKDIR /celadon
