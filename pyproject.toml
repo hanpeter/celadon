@@ -14,7 +14,7 @@ flask-cors = "^4.0.0"
 psycopg2-binary = "^2.9.11"
 
 [tool.poetry.group.dev.dependencies]
-pycodestyle = "^2.11.0"
+pycodestyle = "^2.14.0"
 pytest = "^6.2.5"
 
 [build-system]
