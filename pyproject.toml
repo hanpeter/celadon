@@ -20,7 +20,3 @@ pytest = "^6.2.5"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.pycodestyle]
-max-line-length = 120
-statistics = true
