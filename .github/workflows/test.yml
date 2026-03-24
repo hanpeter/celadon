@@ -1,29 +1,32 @@
 name: Test
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
-    branches:
-      - main
+    branches: [main]
+  push:
+    branches: [main]
 
 jobs:
   test:
     name: Test
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Install poetry
-        run: pip install poetry==1.6.1
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+      - name: Checkout code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install Poetry
+        run: pipx install poetry==2.3.2
+      - name: Set up Python
+        id: setup-python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: 3.11
-          cache: poetry
+          python-version: "3.13"
+          cache: "poetry"
       - name: Install dependencies
-        run: poetry install --with dev --no-root
+        run: poetry install --with=dev --no-root
+        env:
+          POETRY_VIRTUALENVS_IN_PROJECT: "1"
       - name: Lint
         run: poetry run pycodestyle
       - name: Test
