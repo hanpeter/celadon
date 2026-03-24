@@ -7,7 +7,10 @@ from celadon.models import Purchaser, Purchase, Item
 
 class Database(object):
     def __init__(self):
-        self._conn = psycopg2.connect(dsn=os.environ.get('DATABASE_URL'))
+        database_url = os.environ.get('DATABASE_URL')
+        if not database_url:
+            raise EnvironmentError('DATABASE_URL environment variable is not set')
+        self._conn = psycopg2.connect(dsn=database_url)
         self._conn.set_session(autocommit=True)
 
     def get_purchasers(self):

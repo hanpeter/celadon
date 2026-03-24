@@ -21,13 +21,13 @@ class Purchase(object):
         WHERE id = %(id)s
     ''')
 
-    def __init__(self, id, purchase_date, cost, purchaser_id, purchaser_name, items=[]):
+    def __init__(self, id, purchase_date, cost, purchaser_id, purchaser_name, items=None):
         self.id = id
         self.purchase_date = purchase_date
         self.cost = float(cost)
         self.purchaser_id = purchaser_id
         self.purchaser_name = purchaser_name
-        self.items = items
+        self.items = items if items is not None else []
 
     def to_dict(self):
         return {
