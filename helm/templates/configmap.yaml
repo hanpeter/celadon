@@ -1,4 +1,3 @@
-{{- if .Values.database.initdb }}
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -11,5 +10,5 @@ metadata:
     helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version }}
     app.kubernetes.io/component: database
 data:
-  initdb.sql: "{{ .Values.database.initdb }}"
-{{- end }}
+  initdb.sql: |
+    {{- required "helm/files/initdb.sql is missing — copy db/init_db.sql into helm/files/ before rendering" (.Files.Get "files/initdb.sql") | indent 4 }}

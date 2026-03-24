@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from werkzeug.exceptions import NotFound
+
 
 class Application(object):
     def __init__(self, database):
@@ -10,8 +12,7 @@ class Application(object):
 
         if len(purchasers) > 0:
             return purchasers[0].to_dict()
-        else:
-            return {}
+        raise NotFound(f'Purchaser {id} not found')
 
     def get_purchasers(self):
         return [purchaser.to_dict() for purchaser in self._database.get_purchasers()]
@@ -29,8 +30,7 @@ class Application(object):
 
         if len(purchases) > 0:
             return purchases[0].to_dict()
-        else:
-            return {}
+        raise NotFound(f'Purchase {id} not found')
 
     def get_purchases(self):
         return [purchase.to_dict() for purchase in self._database.get_purchases()]
@@ -51,8 +51,7 @@ class Application(object):
 
         if len(items) > 0:
             return items[0].to_dict()
-        else:
-            return {}
+        raise NotFound(f'Item {id} not found')
 
     def get_items(self):
         return [item.to_dict() for item in self._database.get_items()]
