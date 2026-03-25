@@ -1,0 +1,92 @@
+{{- if .Values.database.enabled }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "celadon.database.name" . }}
+  labels: {{- include "celadon.database.labels" . | nindent 4 }}
+  annotations: {{- include "celadon.annotations" . | nindent 4 }}
+spec:
+  serviceName: {{ include "celadon.database.name" . }}
+  replicas: {{ .Values.database.replicas }}
+  selector:
+    matchLabels: {{- include "celadon.database.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "celadon.database.podLabels" . | nindent 8 }}
+      annotations:
+        {{- with merge (.Values.database.podAnnotations | default dict) (include "celadon.annotations" . | fromYaml) }}
+        {{- toYaml . | nindent 8 }}
+        {{- else }}
+        {}
+        {{- end }}
+    spec:
+      imagePullSecrets: {{- include "celadon.imagePullSecrets" (dict "pullSecrets" .Values.database.image.pullSecrets "ctx" .) | nindent 8 }}
+      containers:
+        - name: postgres
+          image: {{ include "celadon.image" (dict "image" .Values.database.image "ctx" .) }}
+          imagePullPolicy: {{ .Values.database.image.pullPolicy }}
+          ports:
+            - name: postgres
+              containerPort: {{ .Values.connection.port }}
+              protocol: TCP
+          env:
+            - name: POSTGRESQL_PORT_NUMBER
+              value: {{ .Values.connection.port | quote }}
+            - name: POSTGRES_DB
+              value: {{ .Values.connection.dbName | quote }}
+            - name: POSTGRES_USER
+              value: {{ .Values.connection.username | quote }}
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "celadon.database.name" . }}
+                  key: database_password
+          volumeMounts:
+            - name: custom-init-scripts
+              mountPath: /docker-entrypoint-initdb.d/
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            {{- $extraVolumeMounts := concat .Values.extraVolumeMounts .Values.database.extraVolumeMounts }}
+            {{- if $extraVolumeMounts }}
+            {{- toYaml $extraVolumeMounts | nindent 12 }}
+            {{- end }}
+          {{- with .Values.database.securityContext }}
+          securityContext: {{- toYaml . | nindent 12 }}
+          {{- end }}
+      volumes:
+        - name: custom-init-scripts
+          configMap:
+            name: {{ include "celadon.database.name" . }}
+        - name: data
+          emptyDir: {}
+        {{- $extraVolumes := concat .Values.extraVolumes .Values.database.extraVolumes }}
+        {{- if $extraVolumes }}
+        {{- toYaml $extraVolumes | nindent 8 }}
+        {{- end }}
+      {{- with (.Values.database.nodeSelector | default .Values.nodeSelector) }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (.Values.database.affinity | default .Values.affinity) }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (.Values.database.tolerations | default .Values.tolerations) }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- $tsc := .Values.database.topologySpreadConstraints | default .Values.topologySpreadConstraints }}
+      {{- if $tsc }}
+      topologySpreadConstraints:
+        {{- range $constraint := $tsc }}
+        {{- $selector := $constraint.labelSelector }}
+        {{- if not $selector }}
+        {{- $selector = dict "matchLabels" (include "celadon.database.matchLabels" $ | trim | fromYaml) }}
+        {{- end }}
+        {{- $merged := merge (dict "labelSelector" $selector) $constraint }}
+        - {{- toYaml $merged | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.database.podSecurityContext }}
+      securityContext: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.database.terminationGracePeriodSeconds }}
+{{- end }}

@@ -1,0 +1,22 @@
+{{- if .Values.database.enabled }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "celadon.database.name" . }}
+  labels: {{- include "celadon.database.labels" . | nindent 4 }}
+  annotations:
+    {{- with merge (.Values.database.service.annotations | default dict) (include "celadon.annotations" . | fromYaml) }}
+    {{- toYaml . | nindent 4 }}
+    {{- else }}
+    {}
+    {{- end }}
+spec:
+  type: {{ .Values.database.service.type }}
+  ports:
+    - name: postgres
+      port: {{ .Values.database.service.port }}
+      targetPort: postgres
+      protocol: TCP
+  selector: {{- include "celadon.database.matchLabels" . | nindent 4 }}
+{{- end }}

@@ -1,66 +1,203 @@
+global:
+  # -- Default image registry for all images in this chart
+  imageRegistry: ""
+  # -- Global list of image pull secrets applied to all pods
+  imagePullSecrets: []
+
+# -- Override the chart name used in resource names and labels
+nameOverride: ""
+# -- Override the fully qualified app name used in resource names
+fullnameOverride: ""
+
+# -- Labels to add to all resources
+commonLabels: {}
+# -- Annotations to add to all resources
+commonAnnotations: {}
+
+# -- Database connection configuration
+connection:
+  # -- Hostname of the database. Defaults to the k8s service name when database.enabled is true.
+  host: ""
+  # -- Port of the database
+  port: "5432"
+  # -- Name of the database
+  dbName: celadon
+  # -- Username of the database
+  username: ""
+  # -- Password of the database
+  password: ""
+
+# -- Extra volume mounts to add to all pods
+extraVolumeMounts: []
+# -- Extra volumes to add to all pods
+extraVolumes: []
+
+# -- Node labels for pod assignment
+nodeSelector: {}
+# -- Affinity configuration for pod scheduling
+affinity: {}
+# -- Tolerations for pod assignment
+tolerations: []
+# -- Topology spread constraints for pod distribution
+topologySpreadConstraints: []
+
 application:
-  # -- Name of this application
-  name: celadon
   # -- Which port does this application listen on?
-  port: 5000
+  port: 8080
   # -- Any additional gunicorn arguments, passed via `GUNICORN_CMD_ARGS` env var
   gunicornArgs: ''
-
-resources:
-  limits:
-    # -- Pod CPU limit
-    cpu: 1
-    # -- Pod memory limit
-    memory: 512Mi
-  requests:
-    # -- Amount of CPU needed for this pod
-    cpu: 500m
-    # -- Amount of memory needed for this pod
-    memory: 256Mi
-
-hpa:
-  # -- Enable Horizontal Pod Autoscaler
-  enabled: true
-  # -- Minimum allowed number of pods
-  minReplicas: 1
-  # -- Maximum allowed number of pods
-  maxReplicas: 6
-  # -- Target CPU utilization of a pod (based on the resources defined above)
-  avgCPUUtilizationPercentage: 50
-  # -- Target memory utilization of a pod (based on the resources defined above)
-  avgMemoryUtilizationPercentage: 50
+  # -- Number of replicas. Ignored when HPA is enabled.
+  replicaCount: 1
+  deploymentStrategy:
+    # -- "ReCreate or "RollingUpdate". "RollingUpdate" is the default value.
+    type: "RollingUpdate"
+    rollingUpdate:
+      # -- Maximum number of Pods that can be created over the desired number of Pods. The value can be an absolute number (for example, 5) or a percentage of desired Pods (for example, 10%). The value cannot be 0 if MaxUnavailable is 0. The absolute number is calculated from the percentage by rounding up. The default value is 25%.
+      maxSurge: 25%
+      # -- Maximum number of Pods that can be unavailable during the update process. The value can be an absolute number (for example, 5) or a percentage of desired Pods (for example, 10%). The absolute number is calculated from percentage by rounding down. The value cannot be 0 if .spec.strategy.rollingUpdate.maxSurge is 0. The default value is 25%.
+      maxUnavailable: 25%
+  # -- Extra labels to add to the application pods
+  podLabels: {}
+  # -- Extra annotations to add to the application pods
+  podAnnotations: {}
+  image:
+    # -- The registry to get your docker image from
+    # @default -- Defaults to `.Values.global.imageRegistry`
+    registry: ""
+    # -- The repository to get your docker image from
+    repository: celadon
+    # -- What tagged version of the docker image you want deployed
+    # @default -- Defaults to `.Chart.AppVersion`
+    tag: ""
+    # -- What image pull policy do you want?
+    pullPolicy: IfNotPresent
+    # -- List of image pull secrets for the application image
+    # @default -- Merged with `.Values.global.imagePullSecrets`
+    pullSecrets: []
+  resources:
+    limits:
+      # -- Pod CPU limit
+      cpu: 1
+      # -- Pod memory limit
+      memory: 512Mi
+    requests:
+      # -- Amount of CPU needed for this pod
+      cpu: 500m
+      # -- Amount of memory needed for this pod
+      memory: 256Mi
+  # -- Extra volume mounts to add to the application container
+  extraVolumeMounts: []
+  # -- Extra volumes to add to the application pod
+  extraVolumes: []
+  # -- Container-level security context for the application container
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    readOnlyRootFilesystem: true
+  # -- Lifecycle hooks for the application container
+  lifecycle: {}
+  # -- Node labels for pod assignment
+  # @default -- Defaults to `.Values.nodeSelector`
+  nodeSelector: {}
+  # -- Affinity for the application pod
+  # @default -- Defaults to `.Values.affinity`
+  affinity: {}
+  # -- Tolerations for the application pod
+  # @default -- Defaults to `.Values.tolerations`
+  tolerations: []
+  # -- Topology spread constraints for the application pod
+  # @default -- Defaults to `.Values.topologySpreadConstraints`
+  topologySpreadConstraints: []
+  # -- Pod-level security context for the application pod
+  podSecurityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    fsGroup: 1000
+  # -- Duration in seconds the pod needs to terminate gracefully
+  terminationGracePeriodSeconds: 30
+  hpa:
+    # -- Enable Horizontal Pod Autoscaler
+    enabled: true
+    # -- Annotations to add to the HPA resource
+    annotations: {}
+    # -- Minimum allowed number of pods
+    minReplicas: 1
+    # -- Maximum allowed number of pods
+    maxReplicas: 6
+    # -- Target CPU utilization of a pod (based on the resources defined above)
+    avgCPUUtilizationPercentage: 50
+    # -- Target memory utilization of a pod (based on the resources defined above)
+    avgMemoryUtilizationPercentage: 50
+  service:
+    # -- Annotations to add to the application service
+    annotations: {}
+    # -- Service type
+    type: ClusterIP
+    # -- Port the service exposes
+    port: 80
 
 database:
   # -- Enable database
   enabled: true
   # -- Number of replicas for the database statefulset
   replicas: 1
+  # -- Extra labels to add to the database pods
+  podLabels: {}
+  # -- Extra annotations to add to the database pods
+  podAnnotations: {}
   image:
-    # -- Docker image of the database
+    # -- The registry to get your docker image from
+    # @default -- Defaults to `.Values.global.imageRegistry`
+    registry: ""
+    # -- The repository to get your docker image from
     repository: postgres
-    # -- Docker tag/version of the database
-    tag: 12
-    # -- Docker pull policy to use
+    # -- What tagged version of the docker image you want deployed
+    tag: "12"
+    # -- What image pull policy do you want?
     pullPolicy: IfNotPresent
-  hostname: 'celadon-database.celadon'
-  dbName: celadon
-  port: '5432'
-  username: ''
-  password: ''
-
-image:
-  # -- Docker image of the application
-  repository: docker.io/library/celadon
-  # -- Docker tag/version of the application
-  tag: latest
-  # -- Docker pull policy to use
-  pullPolicy: IfNotPresent
-
-service:
-  # -- Service type
-  type: NodePort
-  # -- Which port does the service expose?
-  port: 5000
+    # -- List of image pull secrets for the database image
+    # @default -- Merged with `.Values.global.imagePullSecrets`
+    pullSecrets: []
+  # -- Extra volume mounts to add to the database container
+  extraVolumeMounts: []
+  # -- Extra volumes to add to the database pod
+  extraVolumes: []
+  # -- Container-level security context for the database container
+  securityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+    # -- Must be false; Postgres writes to its data directory at runtime
+    readOnlyRootFilesystem: false
+  # -- Node labels for pod assignment
+  # @default -- Defaults to `.Values.nodeSelector`
+  nodeSelector: {}
+  # -- Affinity for the database pod
+  # @default -- Defaults to `.Values.affinity`
+  affinity: {}
+  # -- Tolerations for the database pod
+  # @default -- Defaults to `.Values.tolerations`
+  tolerations: []
+  # -- Topology spread constraints for the database pod
+  # @default -- Defaults to `.Values.topologySpreadConstraints`
+  topologySpreadConstraints: []
+  # -- Pod-level security context for the database pod
+  podSecurityContext:
+    # -- Postgres official image runs as uid 999
+    fsGroup: 999
+    runAsUser: 999
+  # -- Duration in seconds the pod needs to terminate gracefully
+  terminationGracePeriodSeconds: 30
+  service:
+    # -- Annotations to add to the database service
+    annotations: {}
+    # -- Service type
+    type: ClusterIP
+    # -- Port the service exposes
+    port: 5432
 
 localDev:
   # -- Enable configurations to allow local development

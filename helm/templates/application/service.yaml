@@ -1,0 +1,20 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "celadon.application.name" . }}
+  labels: {{- include "celadon.application.labels" . | nindent 4 }}
+  annotations:
+    {{- with merge (.Values.application.service.annotations | default dict) (include "celadon.annotations" . | fromYaml) }}
+    {{- toYaml . | nindent 4 }}
+    {{- else }}
+    {}
+    {{- end }}
+spec:
+  type: {{ .Values.application.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.application.service.port }}
+      targetPort: http
+      protocol: TCP
+  selector: {{- include "celadon.application.matchLabels" . | nindent 4 }}
