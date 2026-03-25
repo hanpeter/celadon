@@ -1,0 +1,101 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "celadon.application.name" . }}
+  labels: {{- include "celadon.application.labels" . | nindent 4 }}
+  annotations: {{- include "celadon.annotations" . | nindent 4 }}
+spec:
+  {{- if not .Values.application.hpa.enabled }}
+  replicas: {{ .Values.application.replicaCount }}
+  {{- end }}
+  strategy: {{- toYaml .Values.application.deploymentStrategy | nindent 4 }}
+  selector:
+    matchLabels: {{- include "celadon.application.matchLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels: {{- include "celadon.application.podLabels" . | nindent 8 }}
+      annotations:
+        {{- with merge (.Values.application.podAnnotations | default dict) (include "celadon.annotations" . | fromYaml) }}
+        {{- toYaml . | nindent 8 }}
+        {{- else }}
+        {}
+        {{- end }}
+    spec:
+      imagePullSecrets:
+        {{- include "celadon.imagePullSecrets" (dict "pullSecrets" .Values.application.image.pullSecrets "ctx" .) | nindent 8 }}
+      containers:
+        - name: {{ include "celadon.application.name" . }}
+          image: {{ include "celadon.image" (dict "image" .Values.application.image "ctx" .) }}
+          imagePullPolicy: {{ .Values.application.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.application.port }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: {{ .Values.application.port | quote }}
+            - name: GUNICORN_CMD_ARGS
+              value: {{ .Values.application.gunicornArgs | quote }}
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "celadon.database.name" . }}
+                  key: database_url
+          resources: {{- toYaml .Values.application.resources | nindent 12 }}
+          {{- $extraVolumeMounts := concat .Values.extraVolumeMounts .Values.application.extraVolumeMounts }}
+          {{- if or .Values.localDev.enabled $extraVolumeMounts }}
+          volumeMounts:
+            {{- if .Values.localDev.enabled }}
+            - name: local-vol
+              mountPath: /celadon
+              readOnly: true
+            {{- end }}
+            {{- if $extraVolumeMounts }}
+            {{- toYaml $extraVolumeMounts | nindent 12 }}
+            {{- end }}
+          {{- end }}
+          {{- with .Values.application.securityContext }}
+          securityContext: {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.application.lifecycle }}
+          lifecycle: {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- $extraVolumes := concat .Values.extraVolumes .Values.application.extraVolumes }}
+      {{- if or .Values.localDev.enabled $extraVolumes }}
+      volumes:
+        {{- if .Values.localDev.enabled }}
+        - name: local-vol
+          hostPath:
+            path: {{ .Values.localDev.path }}
+            type: Directory
+        {{- end }}
+        {{- if $extraVolumes }}
+        {{- toYaml $extraVolumes | nindent 8 }}
+        {{- end }}
+      {{- end }}
+      {{- with (.Values.application.nodeSelector | default .Values.nodeSelector) }}
+      nodeSelector: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (.Values.application.affinity | default .Values.affinity) }}
+      affinity: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with (.Values.application.tolerations | default .Values.tolerations) }}
+      tolerations: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- $tsc := .Values.application.topologySpreadConstraints | default .Values.topologySpreadConstraints }}
+      {{- if $tsc }}
+      topologySpreadConstraints:
+        {{- range $constraint := $tsc }}
+        {{- $selector := $constraint.labelSelector }}
+        {{- if not $selector }}
+        {{- $selector = dict "matchLabels" (include "celadon.application.matchLabels" $ | trim | fromYaml) }}
+        {{- end }}
+        {{- $merged := merge (dict "labelSelector" $selector) $constraint }}
+        - {{- toYaml $merged | nindent 10 }}
+        {{- end }}
+      {{- end }}
+      {{- with .Values.application.podSecurityContext }}
+      securityContext: {{- toYaml . | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.application.terminationGracePeriodSeconds }}

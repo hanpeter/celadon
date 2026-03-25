@@ -1,0 +1,12 @@
+{{- if .Values.database.enabled }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "celadon.database.name" . }}
+  labels: {{- include "celadon.database.labels" . | nindent 4 }}
+  annotations: {{- include "celadon.annotations" . | nindent 4 }}
+data:
+  initdb.sql: |
+    {{- required "helm/files/initdb.sql is missing — copy db/init_db.sql into helm/files/ before rendering" (.Files.Get "files/initdb.sql") | nindent 4 }}
+{{- end }}
