@@ -30,9 +30,7 @@ jobs:
       - name: Lint
         run: poetry run pycodestyle
       - name: Test
-        run: |
-          source .venv/bin/activate
-          pytest --cov=celadon --cov-report=term --cov-fail-under=80
+        run: poetry run pytest --cov=celadon --cov-report=term --cov-fail-under=80
 
 concurrency:
   cancel-in-progress: true
