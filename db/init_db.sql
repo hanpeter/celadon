@@ -1,3 +1,5 @@
+SET client_encoding = 'UTF8';
+
 CREATE TABLE IF NOT EXISTS purchasers (
     id SERIAL PRIMARY KEY,
     name TEXT,
@@ -26,32 +28,25 @@ CREATE TABLE IF NOT EXISTS purchase_items (
     cost DECIMAL(100, 4)
 );
 
-CREATE TABLE IF NOT EXISTS sales (
-    id SERIAL PRIMARY KEY,
-    sales_date TIMESTAMPTZ,
-    buyer_name TEXT,
-    buyer_address TEXT,
-    has_buyer_paid BOOLEAN DEFAULT false,
-    is_shipped BOOLEAN DEFAULT false
-);
-
-CREATE TABLE IF NOT EXISTS sale_items (
-    sales_id INT REFERENCES sales (id),
-    item_id INT REFERENCES items (id),
-    quantity INT,
-    price DECIMAL(100, 4)
-);
-
 CREATE TABLE IF NOT EXISTS customers (
-    id SERIAL PRIMARY KEY,
-    name TEXT,
-    instagram_account TEXT,
-    address TEXT,
-    city TEXT,
-    state TEXT,
-    postal_code TEXT,
-    phone_number TEXT,
+    id                              SERIAL PRIMARY KEY,
+    name                            TEXT,
+    nickname                        TEXT,
+    cellular_phone_number           TEXT,
+    home_phone_number               TEXT,
+    address                         TEXT,
     personal_customs_clearance_code TEXT
+);
+
+CREATE TABLE IF NOT EXISTS sales (
+    id                   SERIAL PRIMARY KEY,
+    customer_id          INT REFERENCES customers (id),
+    description          TEXT,
+    sale_price_won       DECIMAL(15, 0),
+    shipping_cost_dollar DECIMAL(10, 2) NULL,
+    sales_date           TIMESTAMPTZ,
+    paid_date            TIMESTAMPTZ,
+    shipped_date         TIMESTAMPTZ
 );
 
 INSERT INTO purchasers (name) VALUES ('Eunjin');

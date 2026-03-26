@@ -5,7 +5,7 @@ from flask_cors import CORS
 from werkzeug.exceptions import BadRequest, HTTPException
 from celadon.db import Database
 from celadon.application import Application
-from celadon.models import Purchaser, Purchase, Item
+from celadon.models import Customer, Item, Purchase, Purchaser, Sale
 
 
 server = Flask(__name__)
@@ -65,6 +65,40 @@ def purchase(purchase_id=None):
             return jsonify(app.update_purchase(p))
         elif request.method == 'GET':
             return jsonify(app.get_purchase(purchase_id))
+
+
+@server.route('/customer', methods=['GET', 'POST'])
+@server.route('/customer/<int:customer_id>', methods=['GET', 'PUT'])
+def customer(customer_id=None):
+    if customer_id is None:
+        if request.method == 'POST':
+            return jsonify(app.add_customer(Customer.from_dict(get_request_json()))), 201
+        elif request.method == 'GET':
+            return jsonify(app.get_customers())
+    else:
+        if request.method == 'PUT':
+            c = Customer.from_dict(get_request_json())
+            c.id = customer_id
+            return jsonify(app.update_customer(c))
+        elif request.method == 'GET':
+            return jsonify(app.get_customer(customer_id))
+
+
+@server.route('/sale', methods=['GET', 'POST'])
+@server.route('/sale/<int:sale_id>', methods=['GET', 'PUT'])
+def sale(sale_id=None):
+    if sale_id is None:
+        if request.method == 'POST':
+            return jsonify(app.add_sale(Sale.from_dict(get_request_json()))), 201
+        elif request.method == 'GET':
+            return jsonify(app.get_sales())
+    else:
+        if request.method == 'PUT':
+            s = Sale.from_dict(get_request_json())
+            s.id = sale_id
+            return jsonify(app.update_sale(s))
+        elif request.method == 'GET':
+            return jsonify(app.get_sale(sale_id))
 
 
 @server.route('/item', methods=['GET'])
