@@ -59,3 +59,37 @@ class Application(object):
     def update_item(self, item):
         self._database.update_item(item)
         return self.get_item(item.id)
+
+    def get_customer(self, id):
+        customers = self._database.get_customer(id)
+        if len(customers) > 0:
+            return customers[0].to_dict()
+        raise NotFound(f'Customer {id} not found')
+
+    def get_customers(self):
+        return [customer.to_dict() for customer in self._database.get_customers()]
+
+    def add_customer(self, customer):
+        id = self._database.add_customer(customer)
+        return self.get_customer(id)
+
+    def update_customer(self, customer):
+        self._database.update_customer(customer)
+        return self.get_customer(customer.id)
+
+    def get_sale(self, id):
+        sales = self._database.get_sale(id)
+        if len(sales) > 0:
+            return sales[0].to_dict()
+        raise NotFound(f'Sale {id} not found')
+
+    def get_sales(self):
+        return [sale.to_dict() for sale in self._database.get_sales()]
+
+    def add_sale(self, sale):
+        id = self._database.add_sale(sale)
+        return self.get_sale(id)
+
+    def update_sale(self, sale):
+        self._database.update_sale(sale)
+        return self.get_sale(sale.id)

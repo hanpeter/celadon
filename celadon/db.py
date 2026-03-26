@@ -2,7 +2,7 @@
 
 import os
 import psycopg2
-from celadon.models import Purchaser, Purchase, Item
+from celadon.models import Customer, Item, Purchase, Purchaser, Sale
 
 
 class Database(object):
@@ -69,3 +69,41 @@ class Database(object):
     def update_item(self, item):
         with self._conn.cursor() as cur:
             cur.execute(Item.UPDATE, item.to_dict())
+
+    def get_customers(self):
+        with self._conn.cursor() as cur:
+            cur.execute(Customer.SELECT_ALL)
+            return [Customer(*row) for row in cur]
+
+    def get_customer(self, id):
+        with self._conn.cursor() as cur:
+            cur.execute(Customer.SELECT_ONE, [id])
+            return [Customer(*row) for row in cur]
+
+    def add_customer(self, customer):
+        with self._conn.cursor() as cur:
+            cur.execute(Customer.INSERT, customer.to_dict())
+            return cur.fetchone()[0]
+
+    def update_customer(self, customer):
+        with self._conn.cursor() as cur:
+            cur.execute(Customer.UPDATE, customer.to_dict())
+
+    def get_sales(self):
+        with self._conn.cursor() as cur:
+            cur.execute(Sale.SELECT_ALL)
+            return [Sale(*row) for row in cur]
+
+    def get_sale(self, id):
+        with self._conn.cursor() as cur:
+            cur.execute(Sale.SELECT_ONE, [id])
+            return [Sale(*row) for row in cur]
+
+    def add_sale(self, sale):
+        with self._conn.cursor() as cur:
+            cur.execute(Sale.INSERT, sale.to_dict())
+            return cur.fetchone()[0]
+
+    def update_sale(self, sale):
+        with self._conn.cursor() as cur:
+            cur.execute(Sale.UPDATE, sale.to_dict())
