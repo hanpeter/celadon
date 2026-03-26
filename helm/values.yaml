@@ -123,7 +123,7 @@ application:
     # -- Annotations to add to the HPA resource
     annotations: {}
     # -- Minimum allowed number of pods
-    minReplicas: 1
+    minReplicas: 2
     # -- Maximum allowed number of pods
     maxReplicas: 6
     # -- Target CPU utilization of a pod (based on the resources defined above)
