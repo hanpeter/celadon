@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-
 from textwrap import dedent
 
 
-class Customer(object):
+class Customer:
     SELECT_ALL = 'SELECT * FROM customers'
     SELECT_ONE = SELECT_ALL + ' WHERE customers.id = %s'
     INSERT = dedent('''\

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 from datetime import datetime, timezone
 from enum import Enum
 from textwrap import dedent
@@ -19,7 +17,7 @@ class SaleStatus(Enum):
     SHIPPED = 'SHIPPED'
 
 
-class Sale(object):
+class Sale:
     SELECT_ALL = dedent('''\
         SELECT sales.id, sales.customer_id, sales.description, sales.sale_price_won,
                sales.shipping_cost_dollar, sales.sales_date, sales.paid_date, sales.shipped_date,

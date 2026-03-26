@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
-
-
-class Purchaser(object):
+class Purchaser:
     SELECT_ALL = 'SELECT * FROM purchasers'
     SELECT_ONE = SELECT_ALL + " WHERE purchasers.id = %s"
     INSERT = "INSERT INTO purchasers (name) VALUES (%(name)s) RETURNING id"

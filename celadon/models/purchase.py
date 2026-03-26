@@ -1,11 +1,9 @@
-# -*- coding: utf-8 -*-
-
 from textwrap import dedent
 from datetime import datetime
 from celadon.models.item import Item
 
 
-class Purchase(object):
+class Purchase:
     SELECT_ALL = dedent('''\
         SELECT purchases.id, purchases.purchase_date, purchases.cost, purchasers.id, purchasers.name
         FROM purchases INNER JOIN purchasers ON purchases.purchaser_id = purchasers.id
