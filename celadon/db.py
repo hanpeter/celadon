@@ -1,17 +1,9 @@
-# -*- coding: utf-8 -*-
-
-import os
-import psycopg2
 from celadon.models import Customer, Item, Purchase, Purchaser, Sale
 
 
-class Database(object):
-    def __init__(self):
-        database_url = os.environ.get('DATABASE_URL')
-        if not database_url:
-            raise EnvironmentError('DATABASE_URL environment variable is not set')
-        self._conn = psycopg2.connect(dsn=database_url)
-        self._conn.set_session(autocommit=True)
+class Database:
+    def __init__(self, connection):
+        self._conn = connection
 
     def get_purchasers(self):
         with self._conn.cursor() as cur:

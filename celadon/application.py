@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-
 from werkzeug.exceptions import NotFound
 
 
-class Application(object):
+class Application:
     def __init__(self, database):
         self._database = database
 

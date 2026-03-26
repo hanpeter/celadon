@@ -1,0 +1,252 @@
+import pytest
+from datetime import datetime, timezone
+from celadon.models.customer import Customer
+from celadon.models.item import Item
+from celadon.models.purchaser import Purchaser
+from celadon.models.purchase import Purchase
+from celadon.models.sale import Sale, SaleStatus
+
+
+class TestCustomer:
+    def test_from_dict_full(self):
+        d = {
+            'id': 1,
+            'name': 'Alice',
+            'nickname': 'ali',
+            'cellular_phone_number': '010-1234-5678',
+            'home_phone_number': '02-123-4567',
+            'address': '123 Main St',
+            'personal_customs_clearance_code': 'P123456789',
+        }
+        c = Customer.from_dict(d)
+        assert c.id == 1
+        assert c.name == 'Alice'
+        assert c.nickname == 'ali'
+        assert c.cellular_phone_number == '010-1234-5678'
+        assert c.home_phone_number == '02-123-4567'
+        assert c.address == '123 Main St'
+        assert c.personal_customs_clearance_code == 'P123456789'
+
+    def test_from_dict_defaults(self):
+        c = Customer.from_dict({})
+        assert c.id is None
+        assert c.name == ''
+        assert c.nickname == ''
+        assert c.cellular_phone_number == ''
+        assert c.home_phone_number == ''
+        assert c.address == ''
+        assert c.personal_customs_clearance_code == ''
+
+    def test_to_dict_roundtrip(self):
+        d = {
+            'id': 2,
+            'name': 'Bob',
+            'nickname': 'bobby',
+            'cellular_phone_number': '010-9999-8888',
+            'home_phone_number': '',
+            'address': '456 Elm St',
+            'personal_customs_clearance_code': 'P987654321',
+        }
+        assert Customer.from_dict(d).to_dict() == d
+
+
+class TestItem:
+    def test_from_dict_full(self):
+        d = {'id': 10, 'brand': 'Nike', 'name': 'Shoes', 'quantity': 2, 'cost': 99.99}
+        item = Item.from_dict(d)
+        assert item.id == 10
+        assert item.brand == 'Nike'
+        assert item.name == 'Shoes'
+        assert item.quantity == 2
+        assert item.cost == 99.99
+
+    def test_cost_cast_to_float(self):
+        item = Item.from_dict({'id': 1, 'brand': 'X', 'name': 'Y', 'quantity': 1, 'cost': '49'})
+        assert isinstance(item.cost, float)
+        assert item.cost == 49.0
+
+    def test_from_dict_defaults(self):
+        item = Item.from_dict({})
+        assert item.id is None
+        assert item.brand == ''
+        assert item.name == ''
+        assert item.quantity == 0
+        assert item.cost == 0.0
+
+    def test_to_dict_roundtrip(self):
+        d = {'id': 5, 'brand': 'Adidas', 'name': 'Hat', 'quantity': 3, 'cost': 25.0}
+        assert Item.from_dict(d).to_dict() == d
+
+
+class TestPurchaser:
+    def test_from_dict_full(self):
+        p = Purchaser.from_dict({'id': 1, 'name': 'Warehouse A', 'is_active': False})
+        assert p.id == 1
+        assert p.name == 'Warehouse A'
+        assert p.is_active is False
+
+    def test_is_active_defaults_to_true(self):
+        p = Purchaser.from_dict({'id': 1, 'name': 'X'})
+        assert p.is_active is True
+
+    def test_from_dict_defaults(self):
+        p = Purchaser.from_dict({})
+        assert p.id is None
+        assert p.name == ''
+        assert p.is_active is True
+
+    def test_to_dict_roundtrip(self):
+        d = {'id': 3, 'name': 'Depot', 'is_active': False}
+        assert Purchaser.from_dict(d).to_dict() == d
+
+
+class TestPurchase:
+    def test_from_dict_full(self):
+        d = {
+            'id': 1,
+            'purchase_date': '2024-01-15',
+            'cost': 150.0,
+            'purchaser_id': 2,
+            'items': [],
+        }
+        p = Purchase.from_dict(d)
+        assert p.id == 1
+        assert p.purchase_date == datetime(2024, 1, 15)
+        assert p.cost == 150.0
+        assert p.purchaser_id == 2
+        assert p.purchaser_name == ''
+        assert p.items == []
+
+    def test_cost_cast_to_float(self):
+        d = {'purchase_date': '2024-03-01', 'cost': '200', 'purchaser_id': 1}
+        p = Purchase.from_dict(d)
+        assert isinstance(p.cost, float)
+
+    def test_missing_purchaser_id_raises(self):
+        with pytest.raises(ValueError, match='Invalid purchaser ID'):
+            Purchase.from_dict({'purchase_date': '2024-01-01', 'cost': 10})
+
+    def test_nested_items_parsed(self):
+        d = {
+            'purchase_date': '2024-06-01',
+            'cost': 50.0,
+            'purchaser_id': 1,
+            'items': [
+                {'id': 1, 'brand': 'Nike', 'name': 'Shoes', 'quantity': 1, 'cost': 50.0}
+            ],
+        }
+        p = Purchase.from_dict(d)
+        assert len(p.items) == 1
+        assert p.items[0].brand == 'Nike'
+
+    def test_to_dict_format(self):
+        d = {'id': 7, 'purchase_date': '2024-08-20', 'cost': 300.0, 'purchaser_id': 3}
+        result = Purchase.from_dict(d).to_dict()
+        assert result['purchase_date'] == '2024-08-20'
+        assert result['cost'] == 300.0
+
+
+class TestSale:
+    def test_from_dict_full(self):
+        d = {
+            'id': 5,
+            'customer_id': 3,
+            'description': 'Jacket',
+            'sale_price_won': 120000,
+            'shipping_cost_dollar': 15.0,
+            'sales_date': '2024-02-01T00:00:00',
+            'paid_date': None,
+            'shipped_date': None,
+            'customer_name': 'Bob',
+            'customer_nickname': 'bobby',
+        }
+        sale = Sale.from_dict(d)
+        assert sale.id == 5
+        assert sale.customer_id == 3
+        assert sale.description == 'Jacket'
+        assert sale.sale_price_won == 120000
+        assert sale.shipping_cost_dollar == 15.0
+        assert sale.sales_date == datetime(2024, 2, 1, 0, 0, 0)
+        assert sale.paid_date is None
+        assert sale.shipped_date is None
+        assert sale.customer_name == 'Bob'
+        assert sale.customer_nickname == 'bobby'
+        assert sale.status == SaleStatus.SOLD
+
+    def test_from_dict_with_datetime_values(self):
+        sales_date = datetime(2024, 3, 1, 9, 0, 0, tzinfo=timezone.utc)
+        paid_date = datetime(2024, 3, 2, 10, 0, 0, tzinfo=timezone.utc)
+        sale = Sale.from_dict({
+            'customer_id': 1,
+            'sales_date': sales_date,
+            'paid_date': paid_date,
+        })
+        assert sale.sales_date is sales_date
+        assert sale.paid_date is paid_date
+
+    def test_from_dict_missing_customer_id_raises(self):
+        with pytest.raises(ValueError, match='Invalid customer ID'):
+            Sale.from_dict({'description': 'x'})
+
+    def test_sale_price_cast_to_int(self):
+        sale = Sale.from_dict({
+            'customer_id': 1, 'sale_price_won': '50000',
+        })
+        assert isinstance(sale.sale_price_won, int)
+        assert sale.sale_price_won == 50000
+
+    def test_shipping_cost_cast_to_float(self):
+        sale = Sale.from_dict({
+            'customer_id': 1, 'shipping_cost_dollar': '9.99',
+        })
+        assert isinstance(sale.shipping_cost_dollar, float)
+        assert sale.shipping_cost_dollar == 9.99
+
+    def test_to_dict_status_sold(self):
+        sale = Sale.from_dict({'customer_id': 1})
+        d = sale.to_dict()
+        assert d['status'] == 'SOLD'
+        assert d['paid_date'] is None
+        assert d['shipped_date'] is None
+
+    def test_to_dict_status_paid(self):
+        sale = Sale.from_dict({'customer_id': 1, 'paid_date': '2024-01-02T00:00:00'})
+        d = sale.to_dict()
+        assert d['status'] == 'PAID'
+        assert d['paid_date'] == '2024-01-02T00:00:00'
+
+    def test_to_dict_status_shipped(self):
+        sale = Sale.from_dict({
+            'customer_id': 1,
+            'paid_date': '2024-01-02T00:00:00',
+            'shipped_date': '2024-01-03T00:00:00',
+        })
+        d = sale.to_dict()
+        assert d['status'] == 'SHIPPED'
+        assert d['shipped_date'] == '2024-01-03T00:00:00'
+
+    def test_to_dict_full(self):
+        sale = Sale.from_dict({
+            'id': 5,
+            'customer_id': 3,
+            'description': 'Jacket',
+            'sale_price_won': 120000,
+            'shipping_cost_dollar': 15.0,
+            'sales_date': '2024-02-01T00:00:00+0000',
+            'paid_date': None,
+            'shipped_date': None,
+            'customer_name': 'Bob',
+            'customer_nickname': 'bobby',
+        })
+        d = sale.to_dict()
+        assert d['id'] == 5
+        assert d['customer_id'] == 3
+        assert d['customer_name'] == 'Bob'
+        assert d['customer_nickname'] == 'bobby'
+        assert d['description'] == 'Jacket'
+        assert d['sale_price_won'] == 120000
+        assert d['shipping_cost_dollar'] == 15.0
+        assert d['sales_date'] == '2024-02-01T00:00:00+0000'
+        assert d['paid_date'] is None
+        assert d['shipped_date'] is None
+        assert d['status'] == 'SOLD'
