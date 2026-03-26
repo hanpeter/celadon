@@ -167,11 +167,13 @@ database:
   # -- Container-level security context for the database container
   securityContext:
     allowPrivilegeEscalation: false
+    runAsUser: 999
+    runAsGroup: 999
+    runAsNonRoot: true
     capabilities:
       drop:
         - ALL
-    # -- Must be false; Postgres writes to its data directory at runtime
-    readOnlyRootFilesystem: false
+    readOnlyRootFilesystem: true
   # -- Node labels for pod assignment
   # @default -- Defaults to `.Values.nodeSelector`
   nodeSelector: {}
@@ -186,11 +188,17 @@ database:
   topologySpreadConstraints: []
   # -- Pod-level security context for the database pod
   podSecurityContext:
-    # -- Postgres official image runs as uid 999
     fsGroup: 999
-    runAsUser: 999
   # -- Duration in seconds the pod needs to terminate gracefully
   terminationGracePeriodSeconds: 30
+  persistence:
+    # -- Access modes for the database PVC
+    accessModes:
+      - ReadWriteOnce
+    # -- Storage size for the database PVC
+    size: 1Gi
+    # -- Storage class for the database PVC. Defaults to the cluster default.
+    storageClass: ""
   service:
     # -- Annotations to add to the database service
     annotations: {}

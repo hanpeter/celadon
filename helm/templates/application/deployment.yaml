@@ -37,6 +37,8 @@ spec:
               value: {{ .Values.application.port | quote }}
             - name: GUNICORN_CMD_ARGS
               value: {{ .Values.application.gunicornArgs | quote }}
+            - name: TMPDIR
+              value: /tmp
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -44,8 +46,9 @@ spec:
                   key: database_url
           resources: {{- toYaml .Values.application.resources | nindent 12 }}
           {{- $extraVolumeMounts := concat .Values.extraVolumeMounts .Values.application.extraVolumeMounts }}
-          {{- if or .Values.localDev.enabled $extraVolumeMounts }}
           volumeMounts:
+            - name: tmp
+              mountPath: /tmp
             {{- if .Values.localDev.enabled }}
             - name: local-vol
               mountPath: /celadon
@@ -54,7 +57,6 @@ spec:
             {{- if $extraVolumeMounts }}
             {{- toYaml $extraVolumeMounts | nindent 12 }}
             {{- end }}
-          {{- end }}
           {{- with .Values.application.securityContext }}
           securityContext: {{- toYaml . | nindent 12 }}
           {{- end }}
@@ -62,8 +64,10 @@ spec:
           lifecycle: {{- toYaml . | nindent 12 }}
           {{- end }}
       {{- $extraVolumes := concat .Values.extraVolumes .Values.application.extraVolumes }}
-      {{- if or .Values.localDev.enabled $extraVolumes }}
       volumes:
+        - name: tmp
+          emptyDir:
+            sizeLimit: 8Mi
         {{- if .Values.localDev.enabled }}
         - name: local-vol
           hostPath:
@@ -73,7 +77,6 @@ spec:
         {{- if $extraVolumes }}
         {{- toYaml $extraVolumes | nindent 8 }}
         {{- end }}
-      {{- end }}
       {{- with (.Values.application.nodeSelector | default .Values.nodeSelector) }}
       nodeSelector: {{- toYaml . | nindent 8 }}
       {{- end }}

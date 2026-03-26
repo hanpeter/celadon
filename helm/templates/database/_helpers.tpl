@@ -18,8 +18,7 @@ app.kubernetes.io/component: database
 Database component selector/match labels
 */}}
 {{- define "celadon.database.matchLabels" -}}
-app.kubernetes.io/name: {{ include "celadon.database.name" . }}
-app.kubernetes.io/instance: {{ .Release.Name }}
+{{ include "celadon.matchLabels" . }}
 app.kubernetes.io/component: database
 {{- end -}}
 

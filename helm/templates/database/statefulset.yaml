@@ -46,7 +46,10 @@ spec:
             - name: custom-init-scripts
               mountPath: /docker-entrypoint-initdb.d/
             - name: data
-              mountPath: /var/lib/postgresql/data
+              mountPath: /var/lib/postgresql
+            - name: tmp
+              mountPath: /var/run/postgresql
+              subPath: run
             {{- $extraVolumeMounts := concat .Values.extraVolumeMounts .Values.database.extraVolumeMounts }}
             {{- if $extraVolumeMounts }}
             {{- toYaml $extraVolumeMounts | nindent 12 }}
@@ -58,8 +61,9 @@ spec:
         - name: custom-init-scripts
           configMap:
             name: {{ include "celadon.database.name" . }}
-        - name: data
-          emptyDir: {}
+        - name: tmp
+          emptyDir:
+            sizeLimit: 8Mi
         {{- $extraVolumes := concat .Values.extraVolumes .Values.database.extraVolumes }}
         {{- if $extraVolumes }}
         {{- toYaml $extraVolumes | nindent 8 }}
@@ -89,4 +93,15 @@ spec:
       securityContext: {{- toYaml . | nindent 8 }}
       {{- end }}
       terminationGracePeriodSeconds: {{ .Values.database.terminationGracePeriodSeconds }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: {{- .Values.database.persistence.accessModes | toYaml | nindent 10 }}
+        resources:
+          requests:
+            storage: {{ .Values.database.persistence.size }}
+        {{- with .Values.database.persistence.storageClass }}
+        storageClassName: {{ . }}
+        {{- end }}
 {{- end }}
