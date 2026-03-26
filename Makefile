@@ -44,7 +44,7 @@ help:
 # test
 # ---------------------------------------------------------------------------
 test-lint:
-	poetry run pycodestyle celadon/
+	poetry run pycodestyle
 
 test-unit:
 	poetry run pytest --cov=celadon --cov-report=term --cov-fail-under=80
