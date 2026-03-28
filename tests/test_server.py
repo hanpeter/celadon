@@ -82,18 +82,12 @@ class TestCreateConnection:
                 _create_connection()
 
 
-class TestHello:
-    def test_get_root_default(self):
+class TestIndex:
+    def test_get_root_returns_html(self):
         with server_module.server.test_client() as client:
             r = client.get("/")
         assert r.status_code == 200
-        assert r.data.decode() == "Hello!"
-
-    def test_get_root_with_name(self):
-        with server_module.server.test_client() as client:
-            r = client.get("/", query_string={"name": "peter"})
-        assert r.status_code == 200
-        assert r.data.decode() == "Hello Peter!"
+        assert b"<!DOCTYPE html>" in r.data or b"<html" in r.data
 
 
 class TestPurchaserRoutes:
