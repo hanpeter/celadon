@@ -14,14 +14,20 @@
   <nav class="navbar navbar-expand-md navbar-dark bg-dark">
     <div class="container-lg">
       <span class="navbar-brand">Celadon</span>
-      <ul class="navbar-nav ms-3">
-        <li class="nav-item">
-          <a class="nav-link" data-view="#customers" href="#customers">Customers</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" data-view="#sales" href="#sales">Sales</a>
-        </li>
-      </ul>
+      <button class="navbar-toggler ms-auto" type="button" data-bs-toggle="collapse" data-bs-target="#main-nav"
+        aria-controls="main-nav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="main-nav">
+        <ul class="navbar-nav ms-3">
+          <li class="nav-item">
+            <a class="nav-link" data-view="#customers" href="#customers">Customers</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" data-view="#sales" href="#sales">Sales</a>
+          </li>
+        </ul>
+      </div>
     </div>
   </nav>
 

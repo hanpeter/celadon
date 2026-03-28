@@ -3,10 +3,10 @@ import { getCustomers, createCustomer, updateCustomer } from './api.js';
 const PAGE_SIZE = 20;
 
 const COLUMNS = [
-    { field: 'name', label: 'Name' },
-    { field: 'nickname', label: 'Nickname' },
-    { field: 'cellular_phone_number', label: 'Cellular Phone' },
-    { field: 'home_phone_number', label: 'Home Phone' },
+    { field: 'name', label: 'Name', summary: true },
+    { field: 'nickname', label: 'Nickname', summary: true },
+    { field: 'cellular_phone_number', label: 'Cellular Phone', tablet: false },
+    { field: 'home_phone_number', label: 'Home Phone', tablet: false },
     { field: 'address', label: 'Address' },
     { field: 'personal_customs_clearance_code', label: 'Customs Code' },
 ];
@@ -20,11 +20,13 @@ let state = {
 };
 
 let modal = null;
+let viewModal = null;
 let editingId = null;
 
 export function init() {
     renderShell();
     modal = new bootstrap.Modal(document.getElementById('customer-modal'));
+    viewModal = new bootstrap.Modal(document.getElementById('customer-view-modal'));
     bindEvents();
     loadCustomers();
 }
@@ -60,7 +62,7 @@ function renderShell() {
 
         <!-- Add/Edit Modal -->
         <div class="modal fade" id="customer-modal" tabindex="-1" aria-labelledby="customer-modal-title" aria-hidden="true">
-            <div class="modal-dialog">
+            <div class="modal-dialog modal-fullscreen-sm-down">
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="customer-modal-title">Customer</h5>
@@ -80,6 +82,24 @@ function renderShell() {
             </div>
         </div>
 
+        <!-- View Modal (read-only) -->
+        <div class="modal fade" id="customer-view-modal" tabindex="-1" aria-labelledby="customer-view-modal-title" aria-hidden="true">
+            <div class="modal-dialog modal-fullscreen-sm-down">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="customer-view-modal-title">Customer Details</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <dl id="customer-view-fields" class="row mb-0"></dl>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Toast container -->
         <div class="toast-container position-fixed bottom-0 end-0 p-3" id="toast-container"></div>
     `;
@@ -88,6 +108,45 @@ function renderShell() {
 function bindEvents() {
     document.getElementById('btn-add').addEventListener('click', openAddModal);
     document.getElementById('customer-form').addEventListener('submit', handleFormSubmit);
+
+    document.getElementById('table-body').addEventListener('click', (e) => {
+        // Tablet row expand toggle (chevron at left of row)
+        const rowExpandBtn = e.target.closest('.btn-row-expand');
+        if (rowExpandBtn) {
+            const mainRow = rowExpandBtn.closest('tr');
+            const detailRow = mainRow.nextElementSibling;
+            const isExpanding = !mainRow.classList.contains('card-expanded');
+            mainRow.classList.toggle('card-expanded', isExpanding);
+            rowExpandBtn.setAttribute('aria-expanded', String(isExpanding));
+            if (detailRow?.classList.contains('row-detail')) {
+                detailRow.classList.toggle('d-none', !isExpanding);
+            }
+            return;
+        }
+
+        // Mobile card expand toggle (button at bottom of card)
+        const cardExpandBtn = e.target.closest('.btn-card-expand');
+        if (cardExpandBtn) {
+            const mainRow = cardExpandBtn.closest('tr');
+            const isExpanding = !mainRow.classList.contains('card-expanded');
+            mainRow.classList.toggle('card-expanded', isExpanding);
+            cardExpandBtn.setAttribute('aria-expanded', String(isExpanding));
+            return;
+        }
+
+        // View button (tablet detail row)
+        const viewBtn = e.target.closest('.btn-view-customer');
+        if (viewBtn) {
+            openViewModal(Number(viewBtn.dataset.id));
+            return;
+        }
+
+        // Edit button
+        const editBtn = e.target.closest('.btn-edit');
+        if (editBtn) {
+            openEditModal(Number(editBtn.dataset.id));
+        }
+    });
 }
 
 async function loadCustomers() {
@@ -116,11 +175,22 @@ function renderHeaders() {
         return state.sortDir === 'asc' ? '<span class="sort-icon">↑</span>' : '<span class="sort-icon">↓</span>';
     };
 
-    row.innerHTML = COLUMNS.map(({ field, label }) => `
-        <th scope="col" class="sortable-col" data-field="${field}" role="button" tabindex="0">
-            ${label} ${sortIcon(field)}
-        </th>
-    `).join('') + '<th scope="col" class="text-end">Actions</th>';
+    // Toggle header — visible at tablet only (hidden at mobile via card CSS, hidden at desktop via d-lg-none)
+    const expandTh = `<th class="col-toggle d-none d-sm-table-cell d-lg-none" aria-label="Expand"></th>`;
+
+    const dataThs = COLUMNS.map(({ field, label, tablet }) => {
+        const tabletClass = tablet === false ? ' d-none d-lg-table-cell' : '';
+        return `
+            <th scope="col" class="sortable-col${tabletClass}" data-field="${field}" role="button" tabindex="0">
+                ${label} ${sortIcon(field)}
+            </th>
+        `;
+    }).join('');
+
+    // Actions header: visible on desktop only (tablet shows actions in detail row)
+    const actionsTh = `<th scope="col" class="text-end d-none d-lg-table-cell">Actions</th>`;
+
+    row.innerHTML = expandTh + dataThs + actionsTh;
 
     row.querySelectorAll('.sortable-col').forEach((th) => {
         th.addEventListener('click', () => toggleSort(th.dataset.field));
@@ -134,7 +204,7 @@ function renderBody() {
     const tbody = document.getElementById('table-body');
 
     if (!state.customers.length) {
-        tbody.innerHTML = `<tr><td colspan="${COLUMNS.length + 1}" class="text-center text-muted py-4">No customers found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="99" class="text-center text-muted py-4">No customers found.</td></tr>`;
         return;
     }
 
@@ -143,28 +213,83 @@ function renderBody() {
     const page = sorted.slice(start, start + PAGE_SIZE);
     state.totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
 
-    tbody.innerHTML = page.map((customer) => `
-        <tr data-id="${customer.id}">
-            ${COLUMNS.map(({ field }) => {
-        const value = customer[field] ?? '';
-        if (field === 'nickname' && value) {
-            return `<td><a href="https://instagram.com/${escapeHtml(String(value))}" target="_blank" rel="noopener noreferrer">@${escapeHtml(String(value))}</a></td>`;
-        }
-        return `<td>${escapeHtml(String(value))}</td>`;
-    }).join('')}
-            <td class="text-end text-nowrap">
+    // Total visible columns at tablet = expand + non-tablet-false columns
+    const tabletColspan = 1 + COLUMNS.filter((c) => c.tablet !== false).length;
+
+    tbody.innerHTML = page.map((customer) => {
+        const dataCells = COLUMNS.map(({ field, label, summary, tablet }) => {
+            const value = customer[field] ?? '';
+            const summaryAttr = summary ? ' data-summary="1"' : '';
+            const tabletClass = tablet === false ? ' col-desktop-only' : '';
+            if (field === 'nickname' && value) {
+                return `<td data-label="${label}"${summaryAttr} class="${tabletClass.trim()}">`
+                    + `<a href="https://instagram.com/${escapeHtml(String(value))}" target="_blank" rel="noopener noreferrer">@${escapeHtml(String(value))}</a>`
+                    + `</td>`;
+            }
+            return `<td data-label="${label}"${summaryAttr} class="${tabletClass.trim()}">${escapeHtml(String(value))}</td>`;
+        }).join('');
+
+        // Tablet toggle cell — left chevron, visible at tablet only (576px–991px)
+        const expandTd = `
+            <td class="col-toggle d-none d-sm-table-cell d-lg-none">
+                <button class="btn-row-expand" aria-label="Expand row" aria-expanded="false">
+                    <svg class="chevron-right" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708"/>
+                    </svg>
+                    <svg class="chevron-down" xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/>
+                    </svg>
+                </button>
+            </td>`;
+
+        // Mobile expand/collapse button — bottom of card, visible at mobile only (<576px)
+        const cardToggleTd = `
+            <td class="col-card-toggle" data-summary="1">
+                <button class="btn-card-expand" aria-label="Expand card" aria-expanded="false">
+                    <span class="expand-label">Expand</span>
+                    <span class="collapse-label">Collapse</span>
+                    <svg class="chevron-down" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/>
+                    </svg>
+                    <svg class="chevron-up" xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708z"/>
+                    </svg>
+                </button>
+            </td>`;
+
+        // Actions cell (desktop only)
+        const actionsTd = `
+            <td class="text-end text-nowrap card-actions-cell col-desktop-only">
                 <button class="btn btn-outline-secondary btn-sm btn-edit" data-id="${customer.id}" aria-label="Edit">
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
                     </svg>
+                    <span class="btn-label ms-1">Edit</span>
                 </button>
-            </td>
-        </tr>
-    `).join('');
+            </td>`;
 
-    tbody.querySelectorAll('.btn-edit').forEach((btn) => {
-        btn.addEventListener('click', () => openEditModal(Number(btn.dataset.id)));
-    });
+        // Detail row (tablet only) — hidden by default
+        const detailRow = `
+            <tr class="row-detail d-none d-lg-none">
+                <td colspan="${tabletColspan}" class="row-detail-cell">
+                    <button class="btn btn-outline-secondary btn-sm btn-view-customer me-1" data-id="${customer.id}" aria-label="View">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
+                            <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
+                        </svg>
+                        View
+                    </button>
+                    <button class="btn btn-outline-secondary btn-sm btn-edit" data-id="${customer.id}" aria-label="Edit">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                        </svg>
+                        Edit
+                    </button>
+                </td>
+            </tr>`;
+
+        return `<tr data-id="${customer.id}">${expandTd}${dataCells}${actionsTd}${cardToggleTd}</tr>${detailRow}`;
+    }).join('');
 }
 
 function renderPagination() {
@@ -270,6 +395,22 @@ function openEditModal(id) {
     modal.show();
 }
 
+function openViewModal(id) {
+    const customer = state.customers.find((c) => c.id === id);
+    if (!customer) return;
+    document.getElementById('customer-view-modal-title').textContent = customer.name || 'Customer Details';
+    document.getElementById('customer-view-fields').innerHTML = COLUMNS.map(({ field, label }) => {
+        const value = customer[field] ?? '';
+        const display = (field === 'nickname' && value)
+            ? `<a href="https://instagram.com/${escapeHtml(String(value))}" target="_blank" rel="noopener noreferrer">@${escapeHtml(String(value))}</a>`
+            : escapeHtml(String(value)) || '<span class="text-muted">—</span>';
+        return `
+            <dt class="col-5 text-muted fw-normal small">${label}</dt>
+            <dd class="col-7">${display}</dd>
+        `;
+    }).join('');
+    viewModal.show();
+}
 
 async function handleFormSubmit(e) {
     e.preventDefault();
