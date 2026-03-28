@@ -1,0 +1,32 @@
+# Fly.io deployment configuration for celadon.
+#
+# First-time setup:
+#   1. Attach your Fly Postgres app (automatically sets DATABASE_URL secret):
+#        flyctl postgres attach <postgres-app-name> -a celadon
+#   2. Initialize the database schema (one-time):
+#        flyctl postgres connect -a <postgres-app-name>
+#        \i db/init_db.sql
+#   3. Push a v* tag to trigger the first deploy via GitHub Actions.
+
+app = "celadon"
+primary_region = "lax"
+
+[build]
+  image = "ghcr.io/hanpeter/celadon:latest"
+
+[env]
+  PORT = "8080"
+  TMPDIR = "/tmp"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+  max_machines_running = 2
+
+[[vm]]
+  memory = "256mb"
+  cpu_kind = "shared"
+  cpus = 1
