@@ -44,3 +44,226 @@ body {
     border-color: #adb5bd;
     opacity: 1;
 }
+
+/* ── Tablet row expand button (chevron only) ──────────────────────────────── */
+.btn-row-expand {
+    background: none;
+    border: none;
+    padding: 0.25rem 0.35rem;
+    cursor: pointer;
+    color: #6c757d;
+    border-radius: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-row-expand:hover {
+    color: #343a40;
+    background-color: #e9ecef;
+}
+
+/* Show right chevron by default, hide down chevron */
+.btn-row-expand .chevron-right { display: inline-block; }
+.btn-row-expand .chevron-down  { display: none; }
+
+/* When expanded: show down chevron, hide right chevron */
+.card-expanded .btn-row-expand .chevron-right { display: none; }
+.card-expanded .btn-row-expand .chevron-down  { display: inline-block; }
+
+/* ── Mobile card expand button (text + chevron) ───────────────────────────── */
+.btn-card-expand {
+    background: none;
+    border: none;
+    padding: 0.3rem 0.5rem;
+    cursor: pointer;
+    color: #6c757d;
+    border-radius: 0.25rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+}
+
+.btn-card-expand:hover {
+    color: #343a40;
+    background-color: #e9ecef;
+}
+
+/* Show "Expand" + down chevron by default */
+.btn-card-expand .expand-label   { display: inline; }
+.btn-card-expand .collapse-label { display: none; }
+.btn-card-expand .chevron-down   { display: inline-block; }
+.btn-card-expand .chevron-up     { display: none; }
+
+/* When expanded: show "Collapse" + up chevron */
+.card-expanded .btn-card-expand .expand-label   { display: none; }
+.card-expanded .btn-card-expand .collapse-label { display: inline; }
+.card-expanded .btn-card-expand .chevron-down   { display: none; }
+.card-expanded .btn-card-expand .chevron-up     { display: inline-block; }
+
+/* ── Desktop action buttons: hide text labels below xxl (1400px) ─────────── */
+.card-actions-cell .btn-label {
+    display: none;
+}
+
+@media (min-width: 1400px) {
+    .card-actions-cell .btn-label {
+        display: inline;
+    }
+}
+
+/* ── Mobile-only card toggle: hidden at tablet and above ─────────────────── */
+.col-card-toggle {
+    display: none;
+}
+
+/* ── Desktop-only columns: hidden below lg (992px) ───────────────────────── */
+.col-desktop-only {
+    display: none;
+}
+
+@media (min-width: 992px) {
+    .col-desktop-only {
+        display: table-cell;
+    }
+}
+
+/* ── Tablet condensed table (576px–991px) ─────────────────────────────────── */
+@media (min-width: 576px) and (max-width: 991.98px) {
+    /* Toggle column — narrow, left-aligned */
+    .col-toggle {
+        width: 2rem;
+        text-align: center;
+        padding-left: 0.25rem !important;
+        padding-right: 0.25rem !important;
+    }
+
+    /* Detail row — subtle background, no top border */
+    .row-detail td {
+        background-color: #f8f9fa;
+        padding: 0.6rem 1rem;
+        border-top: none;
+    }
+
+    /* Action buttons in detail row — comfortable touch targets */
+    .row-detail .btn {
+        min-height: 40px;
+    }
+}
+
+/* ── Mobile card layout (< 576px) ─────────────────────────────────────────── */
+@media (max-width: 575.98px) {
+    /* Hide the table header */
+    .table-responsive thead {
+        display: none;
+    }
+
+    /* Each row becomes a card (exclude detail rows) */
+    .table-responsive tbody tr:not(.row-detail) {
+        display: block;
+        border: 1px solid #dee2e6;
+        border-radius: 0.5rem;
+        margin-bottom: 0.75rem;
+        padding: 0.5rem 0.75rem;
+        background: #fff;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+    }
+
+    /* Hide detail rows entirely on mobile */
+    .table-responsive tbody tr.row-detail {
+        display: none !important;
+    }
+
+    /* Show mobile card toggle cell */
+    .table-responsive tbody td.col-card-toggle {
+        display: flex;
+    }
+
+    /* Each cell is a flex row: label left, value right */
+    .table-responsive tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.35rem 0;
+        border: none;
+        border-bottom: 1px solid #f1f3f5;
+        font-size: 0.9rem;
+        gap: 0.5rem;
+    }
+
+    .table-responsive tbody td:last-child {
+        border-bottom: none;
+    }
+
+    /* Label prefix from data-label attribute */
+    .table-responsive tbody td[data-label]::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #6c757d;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+        min-width: 7rem;
+    }
+
+    /* Hide detail cells by default (no data-summary) */
+    .table-responsive tbody td:not([data-summary]) {
+        display: none;
+    }
+
+    /* Show all cells when row is expanded */
+    .table-responsive tbody tr.card-expanded td {
+        display: flex;
+    }
+
+    /* Show desktop-only cells when card is expanded */
+    .table-responsive tbody tr.card-expanded td.col-desktop-only {
+        display: flex;
+    }
+
+    /* Card toggle cell — centered at bottom of card, no label prefix */
+    .table-responsive tbody td.col-card-toggle {
+        justify-content: center;
+        border-bottom: none;
+        padding-top: 0.4rem;
+    }
+
+    .table-responsive tbody td.col-card-toggle::before {
+        display: none;
+    }
+
+    /* Make card expand button larger for touch */
+    .table-responsive tbody td.col-card-toggle .btn-card-expand {
+        padding: 0.4rem 0.75rem;
+    }
+
+    /* Action cell — full-width button row when expanded */
+    .table-responsive tbody td.card-actions-cell {
+        flex-wrap: wrap;
+        gap: 0.4rem;
+        justify-content: flex-end;
+    }
+
+    .table-responsive tbody td.card-actions-cell::before {
+        display: none;
+    }
+
+    .table-responsive tbody td.card-actions-cell .btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Pagination — centered, larger touch targets */
+    .pagination {
+        justify-content: center !important;
+    }
+
+    .pagination .page-link {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
