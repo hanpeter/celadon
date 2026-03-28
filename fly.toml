@@ -3,9 +3,10 @@
 # First-time setup:
 #   1. Attach your Fly Postgres app (automatically sets DATABASE_URL secret):
 #        flyctl postgres attach <postgres-app-name> -a celadon
-#   2. Initialize the database schema (one-time):
+#   2. Initialize the database schema (one-time, run in order):
 #        flyctl postgres connect -a <postgres-app-name>
-#        \i db/init_db.sql
+#        \i db/01_init_db.sql
+#        \i db/02_create_tables.sql
 #   3. Push a v* tag to trigger the first deploy via GitHub Actions.
 
 app = "celadon"
