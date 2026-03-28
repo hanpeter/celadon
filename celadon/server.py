@@ -1,7 +1,6 @@
 import os
 import psycopg2
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.exceptions import BadRequest, HTTPException
 from celadon.db import Database
 from celadon.application import Application
@@ -25,8 +24,7 @@ def create_server(connection=None, database=None, application=None):
             database = Database(connection)
         application = Application(database)
 
-    flask_server = Flask(__name__)
-    CORS(app=flask_server, origins="*", allow_headers=['content-type'])
+    flask_server = Flask(__name__, static_folder='static', static_url_path='')
     flask_server.app = application
 
     return flask_server
@@ -48,9 +46,8 @@ def get_request_json():
 
 
 @server.route('/')
-def hello():
-    name = request.args.get('name', '')
-    return "Hello {}".format(name).strip().title() + '!'
+def index():
+    return send_from_directory(server.static_folder, 'index.html')
 
 
 @server.route('/purchaser', methods=['GET', 'POST'])

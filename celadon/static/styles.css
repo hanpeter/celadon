@@ -1,0 +1,46 @@
+body {
+    background-color: #f8f9fa;
+}
+
+.navbar-brand {
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+
+#app {
+    padding-top: 1.5rem;
+    padding-bottom: 2rem;
+}
+
+.sortable-col {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.sortable-col:hover {
+    background-color: #e9ecef;
+}
+
+.sort-icon {
+    font-size: 0.75em;
+    margin-left: 0.25rem;
+    opacity: 0.6;
+}
+
+.table th,
+.table td {
+    vertical-align: middle;
+}
+
+.btn-edit,
+.btn-delete {
+    padding: 0.2rem 0.45rem;
+}
+
+.btn.btn-outline-primary:disabled,
+.btn.btn-outline-success:disabled {
+    color: #adb5bd;
+    border-color: #adb5bd;
+    opacity: 1;
+}
