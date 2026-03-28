@@ -63,7 +63,7 @@ build:
 minikube-deploy:
 	docker build -t "celadon:$(TAG)" .
 	minikube image load "celadon:$(TAG)" --profile "$(KUBE_CONTEXT)"
-	cp db/init_db.sql helm/files/initdb.sql
+	cp db/*.sql helm/files/
 	helm upgrade --install "$(RELEASE)" "$(CHART_DIR)" \
 		-f "$(VALUES_MINIKUBE)" \
 		--kube-context "$(KUBE_CONTEXT)" \

@@ -1,5 +1,3 @@
-SET client_encoding = 'UTF8';
-
 CREATE TABLE IF NOT EXISTS purchasers (
     id SERIAL PRIMARY KEY,
     name TEXT,
