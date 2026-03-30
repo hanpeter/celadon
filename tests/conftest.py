@@ -39,5 +39,6 @@ def app_instance(mock_db):
 def flask_client(mock_app):
     srv = create_server(application=mock_app)
     srv.config['TESTING'] = True
+    srv.secret_key = 'test-secret'
     with srv.test_client() as client:
         yield client, mock_app

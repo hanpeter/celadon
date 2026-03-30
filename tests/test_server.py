@@ -71,7 +71,16 @@ def _json_post_put(client, method, path, body):
 @pytest.fixture(autouse=True)
 def _server_testing():
     server_module.server.config["TESTING"] = True
+    server_module.server.secret_key = "test-secret"
     yield
+
+
+def _authed_client():
+    """Return a test client on the module server with a pre-authenticated session."""
+    client = server_module.server.test_client()
+    with client.session_transaction() as sess:
+        sess["user_email"] = "user@gmail.com"
+    return client
 
 
 class TestCreateConnection:
@@ -83,8 +92,14 @@ class TestCreateConnection:
 
 
 class TestIndex:
-    def test_get_root_returns_html(self):
+    def test_get_root_unauthenticated_redirects_to_login(self):
         with server_module.server.test_client() as client:
+            r = client.get("/")
+        assert r.status_code == 302
+        assert "/login" in r.headers["Location"]
+
+    def test_get_root_authenticated_returns_html(self):
+        with _authed_client() as client:
             r = client.get("/")
         assert r.status_code == 200
         assert b"<!DOCTYPE html>" in r.data or b"<html" in r.data
@@ -96,7 +111,7 @@ class TestPurchaserRoutes:
         expected = [{"id": 1, "name": "a", "is_active": True}]
         mock_app.get_purchasers.return_value = expected
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = client.get("/purchaser")
         assert r.status_code == 200
         assert r.get_json() == expected
@@ -107,7 +122,7 @@ class TestPurchaserRoutes:
         created = {"id": 2, "name": "test", "is_active": True}
         mock_app.add_purchaser.return_value = created
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = _json_post_put(client, "post", "/purchaser", PURCHASER_BODY)
         assert r.status_code == 201
         assert r.get_json() == created
@@ -121,7 +136,7 @@ class TestPurchaserRoutes:
         expected = {"id": 1, "name": "x", "is_active": True}
         mock_app.get_purchaser.return_value = expected
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = client.get("/purchaser/1")
         assert r.status_code == 200
         assert r.get_json() == expected
@@ -134,7 +149,7 @@ class TestPurchaserRoutes:
         body = dict(PURCHASER_BODY)
         body["is_active"] = False
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = _json_post_put(client, "put", "/purchaser/1", body)
         assert r.status_code == 200
         assert r.get_json() == updated
@@ -147,7 +162,7 @@ class TestPurchaserRoutes:
     def test_post_invalid_json_returns_400(self, flask_client):
         _, mock_app = flask_client
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = client.post(
                     "/purchaser",
                     data="not valid json",
@@ -162,7 +177,7 @@ class TestPurchaserRoutes:
         _, mock_app = flask_client
         mock_app.get_purchaser.side_effect = NotFound(description="gone")
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = client.get("/purchaser/1")
         assert r.status_code == 404
         assert r.get_json() == {"error": "gone"}
@@ -182,7 +197,7 @@ class TestPurchaseRoutes:
         ]
         mock_app.get_purchases.return_value = expected
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = client.get("/purchase")
         assert r.status_code == 200
         assert r.get_json() == expected
@@ -199,7 +214,7 @@ class TestPurchaseRoutes:
         }
         mock_app.add_purchase.return_value = created
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = _json_post_put(client, "post", "/purchase", PURCHASE_BODY)
         assert r.status_code == 201
         assert r.get_json() == created
@@ -219,7 +234,7 @@ class TestPurchaseRoutes:
         }
         mock_app.get_purchase.return_value = expected
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = client.get("/purchase/1")
         assert r.status_code == 200
         assert r.get_json() == expected
@@ -236,7 +251,7 @@ class TestPurchaseRoutes:
         }
         mock_app.update_purchase.return_value = updated
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = _json_post_put(client, "put", "/purchase/1", PURCHASE_BODY)
         assert r.status_code == 200
         assert r.get_json() == updated
@@ -252,7 +267,7 @@ class TestCustomerRoutes:
         expected = [{"id": 1, "name": "c", "nickname": "", "cellular_phone_number": ""}]
         mock_app.get_customers.return_value = expected
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = client.get("/customer")
         assert r.status_code == 200
         assert r.get_json() == expected
@@ -263,7 +278,7 @@ class TestCustomerRoutes:
         created = {"id": 2, "name": "test", "nickname": "", "cellular_phone_number": ""}
         mock_app.add_customer.return_value = created
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = _json_post_put(client, "post", "/customer", CUSTOMER_BODY)
         assert r.status_code == 201
         assert r.get_json() == created
@@ -277,7 +292,7 @@ class TestCustomerRoutes:
         expected = {"id": 1, "name": "c", "nickname": "n"}
         mock_app.get_customer.return_value = expected
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = client.get("/customer/1")
         assert r.status_code == 200
         assert r.get_json() == expected
@@ -290,7 +305,7 @@ class TestCustomerRoutes:
         body = dict(CUSTOMER_BODY)
         body["nickname"] = "nick"
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = _json_post_put(client, "put", "/customer/1", body)
         assert r.status_code == 200
         assert r.get_json() == updated
@@ -320,7 +335,7 @@ class TestSaleRoutes:
         ]
         mock_app.get_sales.return_value = expected
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = client.get("/sale")
         assert r.status_code == 200
         assert r.get_json() == expected
@@ -343,7 +358,7 @@ class TestSaleRoutes:
         }
         mock_app.add_sale.return_value = created
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = _json_post_put(client, "post", "/sale", SALE_BODY)
         assert r.status_code == 201
         assert r.get_json() == created
@@ -369,7 +384,7 @@ class TestSaleRoutes:
         }
         mock_app.get_sale.return_value = expected
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = client.get("/sale/1")
         assert r.status_code == 200
         assert r.get_json() == expected
@@ -392,7 +407,7 @@ class TestSaleRoutes:
         }
         mock_app.update_sale.return_value = updated
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = _json_post_put(client, "put", "/sale/1", SALE_BODY)
         assert r.status_code == 200
         assert r.get_json() == updated
@@ -408,7 +423,7 @@ class TestItemRoutes:
         expected = [{"id": 1, "brand": "b", "name": "n", "quantity": 1, "cost": 1.0}]
         mock_app.get_items.return_value = expected
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = client.get("/item")
         assert r.status_code == 200
         assert r.get_json() == expected
@@ -419,7 +434,7 @@ class TestItemRoutes:
         expected = {"id": 1, "brand": "b", "name": "n", "quantity": 2, "cost": 3.0}
         mock_app.get_item.return_value = expected
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = client.get("/item/1")
         assert r.status_code == 200
         assert r.get_json() == expected
@@ -430,7 +445,7 @@ class TestItemRoutes:
         updated = {"id": 1, "brand": "brand", "name": "test", "quantity": 1, "cost": 10.0}
         mock_app.update_item.return_value = updated
         with patch("celadon.server.server.app", mock_app):
-            with server_module.server.test_client() as client:
+            with _authed_client() as client:
                 r = _json_post_put(client, "put", "/item/1", ITEM_BODY)
         assert r.status_code == 200
         assert r.get_json() == updated
