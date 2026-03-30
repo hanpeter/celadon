@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.exceptions import BadRequest, HTTPException
 from celadon.db import Database
 from celadon.application import Application
+from celadon.auth import auth_bp, init_oauth, require_login
 from celadon.models import Customer, Item, Purchase, Purchaser, Sale
 
 
@@ -25,7 +26,11 @@ def create_server(connection=None, database=None, application=None):
         application = Application(database)
 
     flask_server = Flask(__name__, static_folder='static', static_url_path='')
+    flask_server.secret_key = os.environ.get('FLASK_SESSION_SIGNING_KEY', '')
     flask_server.app = application
+
+    flask_server.register_blueprint(auth_bp)
+    init_oauth(flask_server)
 
     return flask_server
 
@@ -46,12 +51,14 @@ def get_request_json():
 
 
 @server.route('/')
+@require_login
 def index():
     return send_from_directory(server.static_folder, 'index.html')
 
 
 @server.route('/purchaser', methods=['GET', 'POST'])
 @server.route('/purchaser/<int:purchaser_id>', methods=['GET', 'PUT'])
+@require_login
 def purchaser(purchaser_id=None):
     if purchaser_id is None:
         if request.method == 'POST':
@@ -69,6 +76,7 @@ def purchaser(purchaser_id=None):
 
 @server.route('/purchase', methods=['GET', 'POST'])
 @server.route('/purchase/<int:purchase_id>', methods=['GET', 'PUT'])
+@require_login
 def purchase(purchase_id=None):
     if purchase_id is None:
         if request.method == 'POST':
@@ -86,6 +94,7 @@ def purchase(purchase_id=None):
 
 @server.route('/customer', methods=['GET', 'POST'])
 @server.route('/customer/<int:customer_id>', methods=['GET', 'PUT'])
+@require_login
 def customer(customer_id=None):
     if customer_id is None:
         if request.method == 'POST':
@@ -103,6 +112,7 @@ def customer(customer_id=None):
 
 @server.route('/sale', methods=['GET', 'POST'])
 @server.route('/sale/<int:sale_id>', methods=['GET', 'PUT'])
+@require_login
 def sale(sale_id=None):
     if sale_id is None:
         if request.method == 'POST':
@@ -120,6 +130,7 @@ def sale(sale_id=None):
 
 @server.route('/item', methods=['GET'])
 @server.route('/item/<int:item_id>', methods=['GET', 'PUT'])
+@require_login
 def item(item_id=None):
     if item_id is None:
         return jsonify(server.app.get_items())

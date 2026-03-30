@@ -91,3 +91,9 @@ class Application:
     def update_sale(self, sale):
         self._database.update_sale(sale)
         return self.get_sale(sale.id)
+
+    # Auth methods are kept here for now. Extract to a dedicated AuthApplication
+    # class if auth logic grows (e.g. roles, permissions, audit logging).
+    def get_user_by_email(self, email):
+        user = self._database.get_user_by_email(email)
+        return user.to_dict() if user else None

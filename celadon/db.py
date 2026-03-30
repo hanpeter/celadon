@@ -1,4 +1,4 @@
-from celadon.models import Customer, Item, Purchase, Purchaser, Sale
+from celadon.models import Customer, Item, Purchase, Purchaser, Sale, User
 
 
 class Database:
@@ -99,3 +99,9 @@ class Database:
     def update_sale(self, sale):
         with self._conn.cursor() as cur:
             cur.execute(Sale.UPDATE, sale.to_dict())
+
+    def get_user_by_email(self, email):
+        with self._conn.cursor() as cur:
+            cur.execute(User.SELECT_ONE_BY_EMAIL, [email])
+            row = cur.fetchone()
+            return User(*row) if row else None
