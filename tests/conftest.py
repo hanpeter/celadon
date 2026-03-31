@@ -1,4 +1,5 @@
 import os
+import pickle
 import pytest
 from unittest.mock import MagicMock, patch
 from celadon.application import Application
@@ -22,7 +23,9 @@ def db_instance(mock_conn):
 
 @pytest.fixture
 def mock_db():
-    return MagicMock()
+    db = MagicMock()
+    db.get_session.return_value = None
+    return db
 
 
 @pytest.fixture
@@ -36,9 +39,13 @@ def app_instance(mock_db):
 
 
 @pytest.fixture
-def flask_client(mock_app):
-    srv = create_server(application=mock_app)
+def flask_client(mock_app, mock_db):
+    srv = create_server(application=mock_app, database=mock_db)
     srv.config['TESTING'] = True
-    srv.secret_key = 'test-secret'
     with srv.test_client() as client:
         yield client, mock_app
+
+
+def make_session_data(user_email='user@gmail.com', user_name='Test User'):
+    """Return pickled session bytes for a pre-authenticated session."""
+    return pickle.dumps({'user_email': user_email, 'user_name': user_name, '_permanent': True})

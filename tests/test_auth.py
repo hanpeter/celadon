@@ -1,9 +1,11 @@
+import hashlib
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 import celadon.server as server_module
 from celadon.models.user import User
+from tests.conftest import make_session_data
 
 
 # ---------------------------------------------------------------------------
@@ -16,19 +18,23 @@ def _make_user(email='user@gmail.com', name='Test User', org_id=1):
 
 @pytest.fixture(autouse=True)
 def _server_testing():
+    mock_db = MagicMock()
+    mock_db.get_session.return_value = None
     server_module.server.config['TESTING'] = True
+    server_module.server.session_interface._db = mock_db
     yield
 
 
 @pytest.fixture
 def auth_client():
     """Flask test client with a pre-authenticated session on the module server."""
-    server_module.server.secret_key = 'test-secret'
-    with server_module.server.test_client() as client:
-        with client.session_transaction() as sess:
-            sess['user_email'] = 'user@gmail.com'
-            sess['user_name'] = 'Test User'
-        yield client
+    sid = 'test-session-id'
+    mock_db = MagicMock()
+    mock_db.get_session.return_value = make_session_data()
+    server_module.server.session_interface._db = mock_db
+    client = server_module.server.test_client()
+    client.set_cookie('session', sid)
+    yield client
 
 
 # ---------------------------------------------------------------------------
@@ -155,29 +161,31 @@ class TestGoogleCallback:
     def _mock_token(self, email='user@gmail.com', name='Test User'):
         return {'userinfo': {'email': email, 'name': name}}
 
-    def _client(self, mock_app):
-        """Return a test client against the module server with mock_app injected."""
-        server_module.server.secret_key = 'test-secret'
-        return server_module.server.test_client(), mock_app
-
     def test_known_user_sets_session_and_redirects(self, mock_app):
         mock_app.get_user_by_email.return_value = _make_user().to_dict()
-        client, _ = self._client(mock_app)
-        with client:
+        with server_module.server.test_client() as client:
             with patch('celadon.auth.oauth.google.authorize_access_token',
                        return_value=self._mock_token()):
                 with patch('celadon.server.server.app', mock_app):
                     r = client.get('/auth/google/callback')
             assert r.status_code == 302
             assert r.headers['Location'] == '/'
-            with client.session_transaction() as sess:
-                assert sess['user_email'] == 'user@gmail.com'
-                assert sess['user_name'] == 'Test User'
+            # Verify session was saved with hashed email as sid and permanent flag
+            expected_sid = hashlib.sha256(b'user@gmail.com').hexdigest()
+            upsert_call = server_module.server.session_interface._db.upsert_session
+            upsert_call.assert_called_once()
+            saved_sid = upsert_call.call_args[0][0]
+            saved_data = upsert_call.call_args[0][1]
+            assert saved_sid == expected_sid
+            import pickle
+            session_data = pickle.loads(saved_data)
+            assert session_data['user_email'] == 'user@gmail.com'
+            assert session_data['user_name'] == 'Test User'
+            assert session_data.get('_permanent') is True
 
     def test_unknown_user_returns_403(self, mock_app):
         mock_app.get_user_by_email.return_value = None
-        client, _ = self._client(mock_app)
-        with client:
+        with server_module.server.test_client() as client:
             with patch('celadon.auth.oauth.google.authorize_access_token',
                        return_value=self._mock_token()):
                 with patch('celadon.server.server.app', mock_app):
@@ -185,8 +193,7 @@ class TestGoogleCallback:
         assert r.status_code == 403
 
     def test_missing_userinfo_returns_403(self, mock_app):
-        client, _ = self._client(mock_app)
-        with client:
+        with server_module.server.test_client() as client:
             with patch('celadon.auth.oauth.google.authorize_access_token',
                        return_value={}):
                 with patch('celadon.server.server.app', mock_app):
@@ -194,8 +201,7 @@ class TestGoogleCallback:
         assert r.status_code == 403
 
     def test_missing_email_in_userinfo_returns_403(self, mock_app):
-        client, _ = self._client(mock_app)
-        with client:
+        with server_module.server.test_client() as client:
             with patch('celadon.auth.oauth.google.authorize_access_token',
                        return_value={'userinfo': {'name': 'No Email'}}):
                 with patch('celadon.server.server.app', mock_app):
@@ -204,17 +210,47 @@ class TestGoogleCallback:
 
 
 # ---------------------------------------------------------------------------
+# PostgresSessionInterface
+# ---------------------------------------------------------------------------
+
+class TestSessionInterface:
+    def test_open_session_with_stale_cookie_returns_new_session(self):
+        """Line 30: cookie present but session not found in DB → new session."""
+        mock_db = MagicMock()
+        mock_db.get_session.return_value = None
+        server_module.server.session_interface._db = mock_db
+        client = server_module.server.test_client()
+        client.set_cookie('session', 'stale-sid')
+        r = client.get('/login')
+        assert r.status_code == 200
+        mock_db.get_session.assert_called_once_with('stale-sid')
+
+    def test_save_session_skips_write_when_unmodified_and_not_permanent(self):
+        """Line 48: session exists, not permanent, unmodified → no upsert called."""
+        import pickle
+        non_permanent_data = pickle.dumps({'user_email': 'user@gmail.com'})
+        mock_db = MagicMock()
+        mock_db.get_session.return_value = non_permanent_data
+        server_module.server.session_interface._db = mock_db
+        client = server_module.server.test_client()
+        client.set_cookie('session', 'test-sid')
+        client.get('/login')
+        mock_db.upsert_session.assert_not_called()
+
+
+# ---------------------------------------------------------------------------
 # /logout
 # ---------------------------------------------------------------------------
 
 class TestLogout:
     def test_logout_clears_session_and_redirects(self):
-        server_module.server.secret_key = 'test-secret'
-        with server_module.server.test_client() as client:
-            with client.session_transaction() as sess:
-                sess['user_email'] = 'user@gmail.com'
-            r = client.get('/logout')
-            assert r.status_code == 302
-            assert '/login' in r.headers['Location']
-            with client.session_transaction() as sess:
-                assert 'user_email' not in sess
+        sid = 'test-session-id'
+        mock_db = MagicMock()
+        mock_db.get_session.return_value = make_session_data()
+        server_module.server.session_interface._db = mock_db
+        client = server_module.server.test_client()
+        client.set_cookie('session', sid)
+        r = client.get('/logout')
+        assert r.status_code == 302
+        assert '/login' in r.headers['Location']
+        mock_db.delete_session.assert_called_once_with(sid)

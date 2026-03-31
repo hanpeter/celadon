@@ -1,5 +1,5 @@
 import json
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 from werkzeug.exceptions import NotFound
@@ -10,6 +10,7 @@ from celadon.models.item import Item
 from celadon.models.purchaser import Purchaser
 from celadon.models.purchase import Purchase
 from celadon.models.sale import Sale
+from tests.conftest import make_session_data
 
 
 # Bodies valid for from_dict (extra keys are ignored where applicable).
@@ -70,16 +71,25 @@ def _json_post_put(client, method, path, body):
 
 @pytest.fixture(autouse=True)
 def _server_testing():
+    mock_db = MagicMock()
+    mock_db.get_session.return_value = None
     server_module.server.config["TESTING"] = True
-    server_module.server.secret_key = "test-secret"
+    server_module.server.session_interface._db = mock_db
     yield
 
 
 def _authed_client():
-    """Return a test client on the module server with a pre-authenticated session."""
+    """Return a test client on the module server with a pre-authenticated session.
+
+    Patches the session interface's DB so open_session returns a pre-authenticated
+    session, without needing a real database or cookie manipulation.
+    """
+    sid = 'test-session-id'
+    mock_db = MagicMock()
+    mock_db.get_session.return_value = make_session_data()
+    server_module.server.session_interface._db = mock_db
     client = server_module.server.test_client()
-    with client.session_transaction() as sess:
-        sess["user_email"] = "user@gmail.com"
+    client.set_cookie('session', sid)
     return client
 
 

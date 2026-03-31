@@ -188,3 +188,38 @@ class TestSale:
         mock_conn.cursor.return_value = cur
         db_instance.update_sale(sale)
         cur.execute.assert_called_once_with(Sale.UPDATE, sale.to_dict())
+
+
+class TestSession:
+    def test_get_session_returns_data_when_found(self, db_instance, mock_conn):
+        raw = b'pickled-data'
+        cur = _make_cursor()
+        cur.fetchone.return_value = (raw,)
+        mock_conn.cursor.return_value = cur
+        result = db_instance.get_session('test-sid')
+        assert cur.execute.call_args[0][1] == ['test-sid']
+        assert result == raw
+
+    def test_get_session_returns_none_when_not_found(self, db_instance, mock_conn):
+        cur = _make_cursor()
+        cur.fetchone.return_value = None
+        mock_conn.cursor.return_value = cur
+        result = db_instance.get_session('missing-sid')
+        assert result is None
+
+    def test_upsert_session(self, db_instance, mock_conn):
+        from datetime import datetime, timezone
+        expiry = datetime(2026, 1, 1, tzinfo=timezone.utc)
+        cur = _make_cursor()
+        mock_conn.cursor.return_value = cur
+        db_instance.upsert_session('test-sid', b'data', expiry)
+        args = cur.execute.call_args[0][1]
+        assert args == ['test-sid', b'data', expiry]
+
+    def test_delete_session(self, db_instance, mock_conn):
+        cur = _make_cursor()
+        mock_conn.cursor.return_value = cur
+        db_instance.delete_session('test-sid')
+        cur.execute.assert_called_once_with(
+            'DELETE FROM sessions WHERE id = %s', ['test-sid']
+        )
