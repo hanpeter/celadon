@@ -1,3 +1,4 @@
+import hashlib
 import os
 import functools
 from flask import Blueprint, session, redirect, url_for, abort, current_app, send_from_directory
@@ -53,6 +54,8 @@ def google_callback():
     if user is None:
         abort(403)
 
+    session.sid = hashlib.sha256(email.encode()).hexdigest()
+    session.permanent = True
     session['user_email'] = email
     session['user_name'] = userinfo.get('name', '')
     return redirect(url_for('index'))
