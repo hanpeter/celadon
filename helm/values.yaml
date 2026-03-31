@@ -216,6 +216,8 @@ auth:
   # -- Set to a random 32-byte hex string (generate with: openssl rand -hex 32).
   # -- Changing this value will invalidate all existing user sessions.
   flaskSessionSigningKey: ""
+  # -- Session TTL in seconds. Defaults to 28800 (8 hours).
+  sessionLifetimeSeconds: 28800
 
 localDev:
   # -- Enable configurations to allow local development

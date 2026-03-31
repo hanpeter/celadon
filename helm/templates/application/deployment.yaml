@@ -59,6 +59,8 @@ spec:
                 secretKeyRef:
                   name: {{ include "celadon.database.name" . }}
                   key: flask_session_signing_key
+            - name: FLASK_SESSION_LIFETIME_SECONDS
+              value: {{ .Values.auth.sessionLifetimeSeconds | quote }}
           resources: {{- toYaml .Values.application.resources | nindent 12 }}
           {{- $extraVolumeMounts := concat .Values.extraVolumeMounts .Values.application.extraVolumeMounts }}
           volumeMounts:
