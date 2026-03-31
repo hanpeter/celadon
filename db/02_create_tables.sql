@@ -61,3 +61,9 @@ CREATE TABLE IF NOT EXISTS users (
     name            TEXT,
     organization_id INT NOT NULL REFERENCES organizations (id)
 );
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id     TEXT PRIMARY KEY,
+    data   BYTEA NOT NULL,
+    expiry TIMESTAMPTZ NOT NULL
+);
