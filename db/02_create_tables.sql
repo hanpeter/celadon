@@ -49,3 +49,21 @@ CREATE TABLE IF NOT EXISTS sales (
 
 INSERT INTO purchasers (name) VALUES ('Eunjin');
 INSERT INTO purchasers (name) VALUES ('Hyojin');
+
+CREATE TABLE IF NOT EXISTS organizations (
+    id   SERIAL PRIMARY KEY,
+    name TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS users (
+    id              SERIAL PRIMARY KEY,
+    email           TEXT NOT NULL UNIQUE,
+    name            TEXT,
+    organization_id INT NOT NULL REFERENCES organizations (id)
+);
+
+CREATE TABLE IF NOT EXISTS sessions (
+    id     TEXT PRIMARY KEY,
+    data   BYTEA NOT NULL,
+    expiry TIMESTAMPTZ NOT NULL
+);

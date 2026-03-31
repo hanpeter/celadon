@@ -207,6 +207,14 @@ database:
     # -- Port the service exposes
     port: 5432
 
+auth:
+  # -- Google OAuth client ID from Google Cloud Console
+  googleClientId: ""
+  # -- Google OAuth client secret from Google Cloud Console
+  googleClientSecret: ""
+  # -- Session TTL in seconds. Defaults to 28800 (8 hours).
+  sessionLifetimeSeconds: 28800
+
 localDev:
   # -- Enable configurations to allow local development
   enabled: false

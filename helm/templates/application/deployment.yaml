@@ -44,6 +44,18 @@ spec:
                 secretKeyRef:
                   name: {{ include "celadon.database.name" . }}
                   key: database_url
+            - name: GOOGLE_CLIENT_ID
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "celadon.database.name" . }}
+                  key: google_client_id
+            - name: GOOGLE_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "celadon.database.name" . }}
+                  key: google_client_secret
+            - name: FLASK_SESSION_LIFETIME_SECONDS
+              value: {{ .Values.auth.sessionLifetimeSeconds | quote }}
           resources: {{- toYaml .Values.application.resources | nindent 12 }}
           {{- $extraVolumeMounts := concat .Values.extraVolumeMounts .Values.application.extraVolumeMounts }}
           volumeMounts:

@@ -1,10 +1,13 @@
 import os
 import psycopg2
+from datetime import timedelta
 from flask import Flask, request, jsonify, send_from_directory
 from werkzeug.exceptions import BadRequest, HTTPException
 from celadon.db import Database
 from celadon.application import Application
+from celadon.auth import auth_bp, init_oauth, require_login
 from celadon.models import Customer, Item, Purchase, Purchaser, Sale
+from celadon.sessions import PostgresSessionInterface
 
 
 def _create_connection():
@@ -17,15 +20,22 @@ def _create_connection():
 
 
 def create_server(connection=None, database=None, application=None):
+    if database is None:
+        if connection is None:
+            connection = _create_connection()
+        database = Database(connection)
     if application is None:
-        if database is None:
-            if connection is None:
-                connection = _create_connection()
-            database = Database(connection)
         application = Application(database)
 
     flask_server = Flask(__name__, static_folder='static', static_url_path='')
+    flask_server.config['PERMANENT_SESSION_LIFETIME'] = timedelta(
+        seconds=int(os.environ.get('FLASK_SESSION_LIFETIME_SECONDS', 28800))
+    )
+    flask_server.session_interface = PostgresSessionInterface(database)
     flask_server.app = application
+
+    flask_server.register_blueprint(auth_bp)
+    init_oauth(flask_server)
 
     return flask_server
 
@@ -46,12 +56,14 @@ def get_request_json():
 
 
 @server.route('/')
+@require_login
 def index():
     return send_from_directory(server.static_folder, 'index.html')
 
 
 @server.route('/purchaser', methods=['GET', 'POST'])
 @server.route('/purchaser/<int:purchaser_id>', methods=['GET', 'PUT'])
+@require_login
 def purchaser(purchaser_id=None):
     if purchaser_id is None:
         if request.method == 'POST':
@@ -69,6 +81,7 @@ def purchaser(purchaser_id=None):
 
 @server.route('/purchase', methods=['GET', 'POST'])
 @server.route('/purchase/<int:purchase_id>', methods=['GET', 'PUT'])
+@require_login
 def purchase(purchase_id=None):
     if purchase_id is None:
         if request.method == 'POST':
@@ -86,6 +99,7 @@ def purchase(purchase_id=None):
 
 @server.route('/customer', methods=['GET', 'POST'])
 @server.route('/customer/<int:customer_id>', methods=['GET', 'PUT'])
+@require_login
 def customer(customer_id=None):
     if customer_id is None:
         if request.method == 'POST':
@@ -103,6 +117,7 @@ def customer(customer_id=None):
 
 @server.route('/sale', methods=['GET', 'POST'])
 @server.route('/sale/<int:sale_id>', methods=['GET', 'PUT'])
+@require_login
 def sale(sale_id=None):
     if sale_id is None:
         if request.method == 'POST':
@@ -120,6 +135,7 @@ def sale(sale_id=None):
 
 @server.route('/item', methods=['GET'])
 @server.route('/item/<int:item_id>', methods=['GET', 'PUT'])
+@require_login
 def item(item_id=None):
     if item_id is None:
         return jsonify(server.app.get_items())

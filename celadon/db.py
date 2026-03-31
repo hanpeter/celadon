@@ -1,4 +1,4 @@
-from celadon.models import Customer, Item, Purchase, Purchaser, Sale
+from celadon.models import Customer, Item, Purchase, Purchaser, Sale, User
 
 
 class Database:
@@ -99,3 +99,33 @@ class Database:
     def update_sale(self, sale):
         with self._conn.cursor() as cur:
             cur.execute(Sale.UPDATE, sale.to_dict())
+
+    def get_user_by_email(self, email):
+        with self._conn.cursor() as cur:
+            cur.execute(User.SELECT_ONE_BY_EMAIL, [email])
+            row = cur.fetchone()
+            return User(*row) if row else None
+
+    def get_session(self, sid):
+        with self._conn.cursor() as cur:
+            cur.execute(
+                'SELECT data FROM sessions WHERE id = %s AND expiry > NOW()',
+                [sid],
+            )
+            row = cur.fetchone()
+        return row[0] if row else None
+
+    def upsert_session(self, sid, data, expiry):
+        with self._conn.cursor() as cur:
+            cur.execute(
+                '''
+                INSERT INTO sessions (id, data, expiry) VALUES (%s, %s, %s)
+                ON CONFLICT (id) DO UPDATE
+                    SET data = EXCLUDED.data, expiry = EXCLUDED.expiry
+                ''',
+                [sid, data, expiry],
+            )
+
+    def delete_session(self, sid):
+        with self._conn.cursor() as cur:
+            cur.execute('DELETE FROM sessions WHERE id = %s', [sid])
