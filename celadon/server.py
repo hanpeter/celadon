@@ -28,7 +28,6 @@ def create_server(connection=None, database=None, application=None):
         application = Application(database)
 
     flask_server = Flask(__name__, static_folder='static', static_url_path='')
-    flask_server.secret_key = os.environ.get('FLASK_SESSION_SIGNING_KEY', '')
     flask_server.config['PERMANENT_SESSION_LIFETIME'] = timedelta(
         seconds=int(os.environ.get('FLASK_SESSION_LIFETIME_SECONDS', 28800))
     )

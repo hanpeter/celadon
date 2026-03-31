@@ -212,10 +212,6 @@ auth:
   googleClientId: ""
   # -- Google OAuth client secret from Google Cloud Console
   googleClientSecret: ""
-  # -- Secret key used by Flask to cryptographically sign session cookies, preventing tampering.
-  # -- Set to a random 32-byte hex string (generate with: openssl rand -hex 32).
-  # -- Changing this value will invalidate all existing user sessions.
-  flaskSessionSigningKey: ""
   # -- Session TTL in seconds. Defaults to 28800 (8 hours).
   sessionLifetimeSeconds: 28800
 
