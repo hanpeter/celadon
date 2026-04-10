@@ -7,8 +7,6 @@ metadata:
   labels: {{- include "celadon.database.labels" . | nindent 4 }}
   annotations: {{- include "celadon.annotations" . | nindent 4 }}
 data:
-  01_init_db.sql: |
-    {{- required "helm/files/01_init_db.sql is missing" (.Files.Get "files/01_init_db.sql") | nindent 4 }}
   02_create_tables.sql: |
     {{- required "helm/files/02_create_tables.sql is missing" (.Files.Get "files/02_create_tables.sql") | nindent 4 }}
 {{- end }}

@@ -274,7 +274,7 @@ class TestPurchaseRoutes:
 class TestCustomerRoutes:
     def test_get_list(self, flask_client):
         _, mock_app = flask_client
-        expected = [{"id": 1, "name": "c", "nickname": "", "cellular_phone_number": ""}]
+        expected = [{"id": 1, "name": "c", "nickname": "", "phone_number": ""}]
         mock_app.get_customers.return_value = expected
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
@@ -285,7 +285,7 @@ class TestCustomerRoutes:
 
     def test_post_valid_json(self, flask_client):
         _, mock_app = flask_client
-        created = {"id": 2, "name": "test", "nickname": "", "cellular_phone_number": ""}
+        created = {"id": 2, "name": "test", "nickname": "", "phone_number": ""}
         mock_app.add_customer.return_value = created
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:

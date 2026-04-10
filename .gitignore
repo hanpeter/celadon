@@ -127,3 +127,12 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Local plans and notes
+.cursor/plans/
+
+# Helm SQL init files (generated, not source-controlled here)
+helm/files/*.sql
+
+# Helm local value overrides
+helm/*overrides.yaml

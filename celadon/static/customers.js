@@ -5,9 +5,9 @@ const PAGE_SIZE = 20;
 const COLUMNS = [
     { field: 'name', label: 'Name', summary: true },
     { field: 'nickname', label: 'Nickname', summary: true },
-    { field: 'cellular_phone_number', label: 'Cellular Phone', tablet: false },
-    { field: 'home_phone_number', label: 'Home Phone', tablet: false },
+    { field: 'phone_number', label: 'Phone', tablet: false, inputType: 'tel' },
     { field: 'address', label: 'Address' },
+    { field: 'postal_code', label: 'Postal Code', tablet: false },
     { field: 'personal_customs_clearance_code', label: 'Customs Code' },
 ];
 
@@ -361,11 +361,11 @@ function sortCustomers(list) {
 // --- Modal helpers ---
 
 function buildFormFields(customer) {
-    return COLUMNS.map(({ field, label }) => `
+    return COLUMNS.map(({ field, label, inputType }) => `
         <div class="mb-3">
             <label for="field-${field}" class="form-label">${label}</label>
             <input
-                type="text"
+                type="${inputType ?? 'text'}"
                 class="form-control"
                 id="field-${field}"
                 name="${field}"

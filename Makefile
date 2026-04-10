@@ -6,7 +6,7 @@ BUILD_TAG  ?= latest
 
 RELEASE    := celadon
 CHART_DIR  := helm
-VALUES_MINIKUBE := helm/values-minikube.yaml
+VALUES_MINIKUBE := helm/values-minikube-overrides.yaml
 DB_STATEFULSET  := celadon-database
 DB_PVC          := data-celadon-database-0
 APP_SERVICE     := celadon
