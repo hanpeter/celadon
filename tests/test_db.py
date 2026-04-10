@@ -189,6 +189,12 @@ class TestSale:
         db_instance.update_sale(sale)
         cur.execute.assert_called_once_with(Sale.UPDATE, sale.to_dict())
 
+    def test_delete_sale(self, db_instance, mock_conn):
+        cur = _make_cursor()
+        mock_conn.cursor.return_value = cur
+        db_instance.delete_sale(1)
+        cur.execute.assert_called_once_with(Sale.DELETE, [1])
+
 
 class TestSession:
     def test_get_session_returns_data_when_found(self, db_instance, mock_conn):

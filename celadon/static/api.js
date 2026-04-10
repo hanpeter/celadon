@@ -22,3 +22,4 @@ export const updateCustomer = (id, data) => request('PUT', `/customer/${id}`, da
 export const getSales = () => request('GET', '/sale');
 export const createSale = (data) => request('POST', '/sale', data);
 export const updateSale = (id, data) => request('PUT', `/sale/${id}`, data);
+export const deleteSale = (id) => request('DELETE', `/sale/${id}`);

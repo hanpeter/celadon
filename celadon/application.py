@@ -92,6 +92,10 @@ class Application:
         self._database.update_sale(sale)
         return self.get_sale(sale.id)
 
+    def delete_sale(self, id):
+        self.get_sale(id)  # raises NotFound if missing
+        self._database.delete_sale(id)
+
     # Auth methods are kept here for now. Extract to a dedicated AuthApplication
     # class if auth logic grows (e.g. roles, permissions, audit logging).
     def get_user_by_email(self, email):

@@ -207,3 +207,17 @@ class TestSale:
         assert app_instance.update_sale(sale) == {'id': 6, 'status': 'pending'}
         mock_db.update_sale.assert_called_once_with(sale)
         mock_db.get_sale.assert_called_once_with(6)
+
+    def test_delete_sale_found(self, mock_db, app_instance):
+        row = MagicMock()
+        row.to_dict.return_value = {'id': 7, 'status': 'SOLD'}
+        mock_db.get_sale.return_value = [row]
+        app_instance.delete_sale(7)
+        mock_db.get_sale.assert_called_once_with(7)
+        mock_db.delete_sale.assert_called_once_with(7)
+
+    def test_delete_sale_not_found(self, mock_db, app_instance):
+        mock_db.get_sale.return_value = []
+        with pytest.raises(NotFound, match='Sale 99 not found'):
+            app_instance.delete_sale(99)
+        mock_db.delete_sale.assert_not_called()

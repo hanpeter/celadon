@@ -44,6 +44,7 @@ class Sale:
             shipped_date = %(shipped_date)s
         WHERE id = %(id)s
     ''')
+    DELETE = 'DELETE FROM sales WHERE id = %s'
 
     def __init__(self, id, customer_id, description, sale_price_won,
                  shipping_cost_dollar, sales_date, paid_date, shipped_date,

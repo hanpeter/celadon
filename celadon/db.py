@@ -100,6 +100,10 @@ class Database:
         with self._conn.cursor() as cur:
             cur.execute(Sale.UPDATE, sale.to_dict())
 
+    def delete_sale(self, id):
+        with self._conn.cursor() as cur:
+            cur.execute(Sale.DELETE, [id])
+
     def get_user_by_email(self, email):
         with self._conn.cursor() as cur:
             cur.execute(User.SELECT_ONE_BY_EMAIL, [email])

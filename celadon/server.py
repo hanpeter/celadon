@@ -116,7 +116,7 @@ def customer(customer_id=None):
 
 
 @server.route('/sale', methods=['GET', 'POST'])
-@server.route('/sale/<int:sale_id>', methods=['GET', 'PUT'])
+@server.route('/sale/<int:sale_id>', methods=['GET', 'PUT', 'DELETE'])
 @require_login
 def sale(sale_id=None):
     if sale_id is None:
@@ -129,6 +129,9 @@ def sale(sale_id=None):
             s = Sale.from_dict(get_request_json())
             s.id = sale_id
             return jsonify(server.app.update_sale(s))
+        elif request.method == 'DELETE':
+            server.app.delete_sale(sale_id)
+            return '', 204
         else:
             return jsonify(server.app.get_sale(sale_id))
 
