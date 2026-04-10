@@ -1,4 +1,4 @@
-import { getSales, createSale, updateSale, getCustomers } from './api.js';
+import { getSales, createSale, updateSale, deleteSale, getCustomers } from './api.js';
 
 const PAGE_SIZE = 20;
 
@@ -200,6 +200,13 @@ function bindEvents() {
         const shippedBtn = e.target.closest('.btn-mark-shipped');
         if (shippedBtn) {
             openShippedModal(Number(shippedBtn.dataset.id));
+            return;
+        }
+
+        // Delete button
+        const deleteBtn = e.target.closest('.btn-delete-sale');
+        if (deleteBtn) {
+            handleDelete(Number(deleteBtn.dataset.id));
         }
     });
 }
@@ -354,12 +361,19 @@ function renderBody() {
                     </svg>
                     <span class="btn-label ms-1">Mark Paid</span>
                 </button>
-                <button class="btn btn-outline-success btn-sm btn-mark-shipped" data-id="${sale.id}" aria-label="Mark as shipped" ${sale.status !== 'PAID' ? 'disabled' : ''}>
+                <button class="btn btn-outline-success btn-sm btn-mark-shipped me-1" data-id="${sale.id}" aria-label="Mark as shipped" ${sale.status !== 'PAID' ? 'disabled' : ''}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M8.5 6a.5.5 0 0 0-1 0v1.5H6a.5.5 0 0 0 0 1h1.5V10a.5.5 0 0 0 1 0V8.5H10a.5.5 0 0 0 0-1H8.5z"/>
                         <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5zm1.294 7.456A2 2 0 0 1 3 10a2 2 0 0 1 1.732 1H11V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456M12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2m9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2"/>
                     </svg>
                     <span class="btn-label ms-1">Ship</span>
+                </button>
+                <button class="btn btn-outline-danger btn-sm btn-delete-sale" data-id="${sale.id}" aria-label="Delete">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                        <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                    </svg>
+                    <span class="btn-label ms-1">Delete</span>
                 </button>
             </td>`;
 
@@ -386,12 +400,19 @@ function renderBody() {
                         </svg>
                         Mark Paid
                     </button>
-                    <button class="btn btn-outline-success btn-sm btn-mark-shipped" data-id="${sale.id}" aria-label="Mark as shipped" ${sale.status !== 'PAID' ? 'disabled' : ''}>
+                    <button class="btn btn-outline-success btn-sm btn-mark-shipped me-1" data-id="${sale.id}" aria-label="Mark as shipped" ${sale.status !== 'PAID' ? 'disabled' : ''}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M8.5 6a.5.5 0 0 0-1 0v1.5H6a.5.5 0 0 0 0 1h1.5V10a.5.5 0 0 0 1 0V8.5H10a.5.5 0 0 0 0-1H8.5z"/>
                             <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5zm1.294 7.456A2 2 0 0 1 3 10a2 2 0 0 1 1.732 1H11V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456M12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2m9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2"/>
                         </svg>
                         Ship
+                    </button>
+                    <button class="btn btn-outline-danger btn-sm btn-delete-sale" data-id="${sale.id}" aria-label="Delete">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                            <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                        </svg>
+                        Delete
                     </button>
                 </td>
             </tr>`;
@@ -615,6 +636,20 @@ function openShippedModal(id) {
         document.getElementById('sale-shipping')?.focus();
     }, { once: true });
     modal.show();
+}
+
+async function handleDelete(id) {
+    const sale = state.sales.find((s) => s.id === id);
+    if (!sale) return;
+    const label = sale.customer_name ? `sale for ${sale.customer_name}` : 'this sale';
+    if (!confirm(`Delete ${label}? This cannot be undone.`)) return;
+    try {
+        await deleteSale(id);
+        showToast('Sale deleted.', 'success');
+        await loadSales();
+    } catch (err) {
+        showToast(err.message, 'danger');
+    }
 }
 
 function saleToFormData(sale) {

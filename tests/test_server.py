@@ -426,6 +426,25 @@ class TestSaleRoutes:
         assert isinstance(arg, Sale)
         assert arg.id == 1
 
+    def test_delete_one(self, flask_client):
+        _, mock_app = flask_client
+        mock_app.delete_sale.return_value = None
+        with patch("celadon.server.server.app", mock_app):
+            with _authed_client() as client:
+                r = client.delete("/sale/1")
+        assert r.status_code == 204
+        assert r.data == b''
+        mock_app.delete_sale.assert_called_once_with(1)
+
+    def test_delete_one_not_found(self, flask_client):
+        _, mock_app = flask_client
+        mock_app.delete_sale.side_effect = NotFound(description="Sale 99 not found")
+        with patch("celadon.server.server.app", mock_app):
+            with _authed_client() as client:
+                r = client.delete("/sale/99")
+        assert r.status_code == 404
+        assert r.get_json() == {"error": "Sale 99 not found"}
+
 
 class TestItemRoutes:
     def test_get_list(self, flask_client):
