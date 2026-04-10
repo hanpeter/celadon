@@ -30,9 +30,9 @@ CREATE TABLE IF NOT EXISTS customers (
     id                              SERIAL PRIMARY KEY,
     name                            TEXT,
     nickname                        TEXT,
-    cellular_phone_number           TEXT,
-    home_phone_number               TEXT,
+    phone_number                    TEXT,
     address                         TEXT,
+    postal_code                     TEXT,
     personal_customs_clearance_code TEXT
 );
 

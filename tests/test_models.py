@@ -13,18 +13,18 @@ class TestCustomer:
             'id': 1,
             'name': 'Alice',
             'nickname': 'ali',
-            'cellular_phone_number': '010-1234-5678',
-            'home_phone_number': '02-123-4567',
+            'phone_number': '010-1234-5678',
             'address': '123 Main St',
+            'postal_code': '12345',
             'personal_customs_clearance_code': 'P123456789',
         }
         c = Customer.from_dict(d)
         assert c.id == 1
         assert c.name == 'Alice'
         assert c.nickname == 'ali'
-        assert c.cellular_phone_number == '010-1234-5678'
-        assert c.home_phone_number == '02-123-4567'
+        assert c.phone_number == '010-1234-5678'
         assert c.address == '123 Main St'
+        assert c.postal_code == '12345'
         assert c.personal_customs_clearance_code == 'P123456789'
 
     def test_from_dict_defaults(self):
@@ -32,9 +32,9 @@ class TestCustomer:
         assert c.id is None
         assert c.name == ''
         assert c.nickname == ''
-        assert c.cellular_phone_number == ''
-        assert c.home_phone_number == ''
+        assert c.phone_number == ''
         assert c.address == ''
+        assert c.postal_code == ''
         assert c.personal_customs_clearance_code == ''
 
     def test_to_dict_roundtrip(self):
@@ -42,9 +42,9 @@ class TestCustomer:
             'id': 2,
             'name': 'Bob',
             'nickname': 'bobby',
-            'cellular_phone_number': '010-9999-8888',
-            'home_phone_number': '',
+            'phone_number': '010-9999-8888',
             'address': '456 Elm St',
+            'postal_code': '67890',
             'personal_customs_clearance_code': 'P987654321',
         }
         assert Customer.from_dict(d).to_dict() == d

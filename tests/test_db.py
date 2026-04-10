@@ -121,7 +121,7 @@ class TestItem:
 
 class TestCustomer:
     def _make_row(self):
-        return (1, 'Alice', 'ali', '010-1234-5678', '', '123 Main St', 'P123')
+        return (1, 'Alice', 'ali', '010-1234-5678', '123 Main St', '12345', 'P123')
 
     def test_get_customers(self, db_instance, mock_conn):
         cur = _make_cursor(rows=[self._make_row()])
@@ -138,7 +138,7 @@ class TestCustomer:
         assert result[0].name == 'Alice'
 
     def test_add_customer(self, db_instance, mock_conn):
-        customer = Customer(None, 'Bob', 'bobby', '010-9999-8888', '', '456 Elm St', 'P456')
+        customer = Customer(None, 'Bob', 'bobby', '010-9999-8888', '456 Elm St', '67890', 'P456')
         cur = _make_cursor(fetchone_value=3)
         mock_conn.cursor.return_value = cur
         result = db_instance.add_customer(customer)
@@ -146,7 +146,7 @@ class TestCustomer:
         assert result == 3
 
     def test_update_customer(self, db_instance, mock_conn):
-        customer = Customer(1, 'Bob', 'bobby', '010-9999-8888', '', '456 Elm St', 'P456')
+        customer = Customer(1, 'Bob', 'bobby', '010-9999-8888', '456 Elm St', '67890', 'P456')
         cur = _make_cursor()
         mock_conn.cursor.return_value = cur
         db_instance.update_customer(customer)
