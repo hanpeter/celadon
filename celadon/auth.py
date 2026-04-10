@@ -1,8 +1,11 @@
 import hashlib
+import logging
 import os
 import functools
 from flask import Blueprint, session, redirect, url_for, abort, current_app, send_from_directory
 from authlib.integrations.flask_client import OAuth
+
+logger = logging.getLogger(__name__)
 
 auth_bp = Blueprint('auth', __name__)
 oauth = OAuth()
@@ -52,6 +55,7 @@ def google_callback():
 
     user = current_app.app.get_user_by_email(email)
     if user is None:
+        logger.warning('Login attempt by unrecognized email: %s', email)
         abort(403)
 
     session.sid = hashlib.sha256(email.encode()).hexdigest()

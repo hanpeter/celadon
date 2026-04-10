@@ -4,6 +4,11 @@ NAMESPACE  ?= celadon
 
 BUILD_TAG  ?= latest
 
+DATABASE_URL          ?=
+GOOGLE_CLIENT_ID      ?=
+GOOGLE_CLIENT_SECRET  ?=
+FLASK_SESSION_SIGNING_KEY ?=
+
 RELEASE    := celadon
 CHART_DIR  := helm
 VALUES_MINIKUBE := helm/values-minikube-overrides.yaml
@@ -18,7 +23,7 @@ GET_ENDPOINTS := / /purchaser /purchase /customer /sale /item
 .PHONY: help test test-lint test-unit build \
         minikube-deploy minikube-deploy-full \
         minikube-remove minikube-remove-full \
-        minikube-get
+        minikube-get run
 
 help:
 	@echo "Usage: make <target> [VAR=value ...]"
@@ -29,6 +34,8 @@ help:
 	@echo "  test-unit               Run unit tests only (pytest)"
 	@echo "  build [BUILD_TAG=latest]"
 	@echo "                          Build the celadon Docker image"
+	@echo "  run [DATABASE_URL=...] [GOOGLE_CLIENT_ID=...] [GOOGLE_CLIENT_SECRET=...] [FLASK_SESSION_SIGNING_KEY=...]"
+	@echo "                          Run the app locally with Flask dev server"
 	@echo "  minikube-deploy [TAG=<datetime>] [KUBE_CONTEXT=minikube] [NAMESPACE=celadon]"
 	@echo "                          Build image and deploy to Minikube via Helm"
 	@echo "  minikube-deploy-full [TAG=<datetime>] [KUBE_CONTEXT=minikube] [NAMESPACE=celadon]"
@@ -39,6 +46,20 @@ help:
 	@echo "                          Helm uninstall, delete DB PVC, remove all celadon images from Minikube and Docker"
 	@echo "  minikube-get [KUBE_CONTEXT=minikube] [NAMESPACE=celadon]"
 	@echo "                          Port-forward and smoke-test all GET endpoints"
+
+# ---------------------------------------------------------------------------
+# run
+# ---------------------------------------------------------------------------
+run:
+	@test -n "$(DATABASE_URL)"         || (echo "ERROR: DATABASE_URL is required"; exit 1)
+	@test -n "$(GOOGLE_CLIENT_ID)"     || (echo "ERROR: GOOGLE_CLIENT_ID is required"; exit 1)
+	@test -n "$(GOOGLE_CLIENT_SECRET)" || (echo "ERROR: GOOGLE_CLIENT_SECRET is required"; exit 1)
+	@test -n "$(FLASK_SESSION_SIGNING_KEY)" || (echo "ERROR: FLASK_SESSION_SIGNING_KEY is required"; exit 1)
+	DATABASE_URL="$(DATABASE_URL)" \
+	GOOGLE_CLIENT_ID="$(GOOGLE_CLIENT_ID)" \
+	GOOGLE_CLIENT_SECRET="$(GOOGLE_CLIENT_SECRET)" \
+	FLASK_SESSION_SIGNING_KEY="$(FLASK_SESSION_SIGNING_KEY)" \
+	poetry run flask --app celadon.server run --port $(APP_PORT)
 
 # ---------------------------------------------------------------------------
 # test
