@@ -131,12 +131,6 @@ dmypy.json
 # Local plans and notes
 .cursor/plans/
 
-# Personal local dev skills (not for sharing)
-.cursor/skills/
-
-# Local environment variables (contains credentials)
-.envrc
-
 # Helm SQL init files (generated, not source-controlled here)
 helm/files/*.sql
 
