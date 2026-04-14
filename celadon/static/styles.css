@@ -12,6 +12,20 @@ body {
     padding-bottom: 2rem;
 }
 
+/* ── Table base ───────────────────────────────────────────────────────────── */
+
+.table th,
+.table td {
+    vertical-align: middle;
+}
+
+/* Allow dropdown menus to overflow the table-responsive container */
+.table-responsive {
+    overflow: visible;
+}
+
+/* ── Sortable column headers ──────────────────────────────────────────────── */
+
 .sortable-col {
     cursor: pointer;
     user-select: none;
@@ -28,9 +42,26 @@ body {
     opacity: 0.6;
 }
 
-.table th,
-.table td {
-    vertical-align: middle;
+/* ── Description column ───────────────────────────────────────────────────── */
+
+td[data-label="Description"] {
+    white-space: normal;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
+/* ── Dropdown item colors (custom, no !important so disabled can override) ── */
+
+.dropdown-item.di-dark    { color: #212529; }
+.dropdown-item.di-primary { color: #0d6efd; }
+.dropdown-item.di-success { color: #198754; }
+.dropdown-item.di-danger  { color: #dc3545; }
+
+/* ── Disabled button states ───────────────────────────────────────────────── */
+
+.dropdown-menu .dropdown-item:disabled,
+.dropdown-menu .dropdown-item[disabled] {
+    color: #adb5bd;
 }
 
 .btn-edit,
@@ -39,13 +70,37 @@ body {
 }
 
 .btn.btn-outline-primary:disabled,
-.btn.btn-outline-success:disabled {
+.btn.btn-outline-success:disabled,
+.btn.btn-outline-danger:disabled {
     color: #adb5bd;
     border-color: #adb5bd;
     opacity: 1;
 }
 
+/* ── Actions dropdown trigger ─────────────────────────────────────────────── */
+
+.btn-actions-menu {
+    background: none;
+    border: none;
+    color: #6c757d;
+    padding: 0.2rem 0.35rem;
+}
+
+.btn-actions-menu:hover,
+.btn-actions-menu:focus {
+    background-color: #e9ecef;
+    color: #343a40;
+    border: none;
+    box-shadow: none;
+}
+
+.btn-actions-menu:disabled {
+    color: #adb5bd;
+    pointer-events: none;
+}
+
 /* ── Tablet row expand button (chevron only) ──────────────────────────────── */
+
 .btn-row-expand {
     background: none;
     border: none;
@@ -72,6 +127,7 @@ body {
 .card-expanded .btn-row-expand .chevron-down  { display: inline-block; }
 
 /* ── Mobile card expand button (text + chevron) ───────────────────────────── */
+
 .btn-card-expand {
     background: none;
     border: none;
@@ -102,34 +158,37 @@ body {
 .card-expanded .btn-card-expand .chevron-down   { display: none; }
 .card-expanded .btn-card-expand .chevron-up     { display: inline-block; }
 
-/* ── Desktop action buttons: hide text labels below xxl (1400px) ─────────── */
-.card-actions-cell .btn-label {
-    display: none;
-}
+/* ── Column visibility defaults (mobile-first) ────────────────────────────── */
 
-@media (min-width: 1400px) {
-    .card-actions-cell .btn-label {
-        display: inline;
-    }
-}
-
-/* ── Mobile-only card toggle: hidden at tablet and above ─────────────────── */
+/* Mobile-only card toggle: hidden at tablet and above */
 .col-card-toggle {
     display: none;
 }
 
-/* ── Desktop-only columns: hidden below lg (992px) ───────────────────────── */
+/* Desktop-only columns: hidden below lg (992px) */
 .col-desktop-only {
     display: none;
 }
 
-@media (min-width: 992px) {
-    .col-desktop-only {
-        display: table-cell;
+/* Mobile-actions cell: hidden at tablet and above */
+.col-mobile-actions {
+    display: none;
+}
+
+/* Detail row: hidden by default at all sizes */
+.row-detail {
+    display: none;
+}
+
+/* ── Tablet (576px–991px) ─────────────────────────────────────────────────── */
+
+@media (min-width: 576px) {
+    /* Description column: cap width to avoid stretching the table */
+    td[data-label="Description"] {
+        max-width: 300px;
     }
 }
 
-/* ── Tablet condensed table (576px–991px) ─────────────────────────────────── */
 @media (min-width: 576px) and (max-width: 991.98px) {
     /* Toggle column — narrow, left-aligned */
     .col-toggle {
@@ -137,6 +196,11 @@ body {
         text-align: center;
         padding-left: 0.25rem !important;
         padding-right: 0.25rem !important;
+    }
+
+    /* Show detail row on tablet when expanded via chevron */
+    .row-detail.row-detail-expanded {
+        display: table-row;
     }
 
     /* Detail row — subtle background, no top border */
@@ -152,7 +216,16 @@ body {
     }
 }
 
-/* ── Mobile card layout (< 576px) ─────────────────────────────────────────── */
+/* ── Desktop (≥992px) ─────────────────────────────────────────────────────── */
+
+@media (min-width: 992px) {
+    .col-desktop-only {
+        display: table-cell;
+    }
+}
+
+/* ── Mobile card layout (<576px) ──────────────────────────────────────────── */
+
 @media (max-width: 575.98px) {
     /* Hide the table header */
     .table-responsive thead {
@@ -170,9 +243,25 @@ body {
         box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
     }
 
-    /* Hide detail rows entirely on mobile */
+    /* Hide detail rows on mobile — tablet-only construct */
     .table-responsive tbody tr.row-detail {
-        display: none !important;
+        display: none;
+    }
+
+    /* Mobile actions cell — hidden by default, shown as flex row when card is expanded */
+    .table-responsive tbody td.col-mobile-actions {
+        display: none;
+    }
+
+    .table-responsive tbody tr.card-expanded td.col-mobile-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.4rem;
+        padding-bottom: 0.25rem;
+    }
+
+    .table-responsive tbody td.col-mobile-actions::before {
+        display: none;
     }
 
     /* Show mobile card toggle cell */
@@ -217,9 +306,9 @@ body {
         display: flex;
     }
 
-    /* Show desktop-only cells when card is expanded */
+    /* Keep desktop-only cells hidden even when card is expanded */
     .table-responsive tbody tr.card-expanded td.col-desktop-only {
-        display: flex;
+        display: none;
     }
 
     /* Card toggle cell — centered at bottom of card, no label prefix */
@@ -236,22 +325,6 @@ body {
     /* Make card expand button larger for touch */
     .table-responsive tbody td.col-card-toggle .btn-card-expand {
         padding: 0.4rem 0.75rem;
-    }
-
-    /* Action cell — full-width button row when expanded */
-    .table-responsive tbody td.card-actions-cell {
-        flex-wrap: wrap;
-        gap: 0.4rem;
-        justify-content: flex-end;
-    }
-
-    .table-responsive tbody td.card-actions-cell::before {
-        display: none;
-    }
-
-    .table-responsive tbody td.card-actions-cell .btn {
-        min-height: 44px;
-        min-width: 44px;
     }
 
     /* Pagination — centered, larger touch targets */

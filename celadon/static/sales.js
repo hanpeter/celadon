@@ -28,11 +28,13 @@ let state = {
     totalPages: 1,
     filterStatus: null,
     filterCustomerId: null,
+    selectedIds: new Set(),
 };
 
 let modal = null;
 let viewModal = null;
 let editingId = null;
+const warningToastEls = { paid: null, shipped: null };
 
 export function init() {
     renderShell();
@@ -65,6 +67,27 @@ function renderShell() {
         </div>
 
         <div id="table-error" class="alert alert-danger d-none" role="alert"></div>
+
+        <div id="bulk-toolbar" class="d-none d-flex align-items-center gap-2 mb-2 p-2 bg-light rounded border">
+            <span id="bulk-count" class="text-muted small me-auto">0 selected</span>
+            <button id="btn-bulk-paid" class="btn btn-outline-primary btn-sm" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                    <path d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v1H1zm0 3h14v7a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 2a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1z"/>
+                </svg>Paid
+            </button>
+            <button id="btn-bulk-shipped" class="btn btn-outline-success btn-sm" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                    <path d="M8.5 6a.5.5 0 0 0-1 0v1.5H6a.5.5 0 0 0 0 1h1.5V10a.5.5 0 0 0 1 0V8.5H10a.5.5 0 0 0 0-1H8.5z"/>
+                    <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5zm1.294 7.456A2 2 0 0 1 3 10a2 2 0 0 1 1.732 1H11V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456M12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2m9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2"/>
+                </svg>Shipped
+            </button>
+            <button id="btn-bulk-delete" class="btn btn-outline-danger btn-sm" disabled>
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-1" viewBox="0 0 16 16">
+                    <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                    <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                </svg>Delete
+            </button>
+        </div>
 
         <div class="table-responsive">
             <table class="table table-hover align-middle" id="sale-table">
@@ -133,21 +156,45 @@ function bindEvents() {
     document.getElementById('filter-unpaid').addEventListener('click', () => {
         state.filterStatus = state.filterStatus === 'unpaid' ? null : 'unpaid';
         state.page = 1;
+        state.selectedIds.clear();
         updateFilterButtons();
         renderTable();
+        updateBulkToolbar();
     });
 
     document.getElementById('filter-unshipped').addEventListener('click', () => {
         state.filterStatus = state.filterStatus === 'unshipped' ? null : 'unshipped';
         state.page = 1;
+        state.selectedIds.clear();
         updateFilterButtons();
         renderTable();
+        updateBulkToolbar();
     });
 
     document.getElementById('filter-customer').addEventListener('change', (e) => {
         state.filterCustomerId = e.target.value ? Number(e.target.value) : null;
         state.page = 1;
+        state.selectedIds.clear();
         renderTable();
+        updateBulkToolbar();
+    });
+
+    document.getElementById('btn-bulk-paid').addEventListener('click', bulkMarkPaid);
+    document.getElementById('btn-bulk-shipped').addEventListener('click', bulkMarkShipped);
+    document.getElementById('btn-bulk-delete').addEventListener('click', bulkDelete);
+
+    document.getElementById('table-body').addEventListener('change', (e) => {
+        const cb = e.target.closest('.row-checkbox');
+        if (cb) {
+            const id = Number(cb.dataset.id);
+            if (cb.checked) {
+                state.selectedIds.add(id);
+            } else {
+                state.selectedIds.delete(id);
+            }
+            renderBody();
+            updateBulkToolbar();
+        }
     });
 
     document.getElementById('table-body').addEventListener('click', (e) => {
@@ -160,7 +207,7 @@ function bindEvents() {
             mainRow.classList.toggle('card-expanded', isExpanding);
             rowExpandBtn.setAttribute('aria-expanded', String(isExpanding));
             if (detailRow?.classList.contains('row-detail')) {
-                detailRow.classList.toggle('d-none', !isExpanding);
+                detailRow.classList.toggle('row-detail-expanded', isExpanding);
             }
             return;
         }
@@ -236,6 +283,7 @@ async function loadSales() {
         state.page = 1;
         populateCustomerFilter();
         renderTable();
+        updateBulkToolbar();
     } catch (err) {
         setTableError(err.message);
     }
@@ -268,6 +316,11 @@ function renderHeaders() {
         return state.sortDir === 'asc' ? '<span class="sort-icon">↑</span>' : '<span class="sort-icon">↓</span>';
     };
 
+    // Select-all checkbox — hidden on mobile
+    const selectAllTh = `<th class="col-checkbox d-none d-sm-table-cell" style="width:1px">
+        <input type="checkbox" class="form-check-input" id="select-all-checkbox" aria-label="Select all">
+    </th>`;
+
     // Toggle header — visible at tablet only
     const expandTh = `<th class="col-toggle d-none d-sm-table-cell d-lg-none" aria-label="Expand"></th>`;
 
@@ -281,9 +334,9 @@ function renderHeaders() {
     }).join('');
 
     // Actions header: visible on desktop only
-    const actionsTh = `<th scope="col" class="text-end d-none d-lg-table-cell">Actions</th>`;
+    const actionsTh = `<th scope="col" class="d-none d-lg-table-cell" style="width:1px"></th>`;
 
-    row.innerHTML = expandTh + dataThs + actionsTh;
+    row.innerHTML = selectAllTh + expandTh + dataThs + actionsTh;
 
     row.querySelectorAll('.sortable-col').forEach((th) => {
         th.addEventListener('click', () => toggleSort(th.dataset.field));
@@ -291,6 +344,20 @@ function renderHeaders() {
             if (e.key === 'Enter' || e.key === ' ') toggleSort(th.dataset.field);
         });
     });
+
+    const selectAllCb = document.getElementById('select-all-checkbox');
+    if (selectAllCb) {
+        selectAllCb.addEventListener('change', () => {
+            const pageIds = getPageIds();
+            if (selectAllCb.checked) {
+                pageIds.forEach((id) => state.selectedIds.add(id));
+            } else {
+                pageIds.forEach((id) => state.selectedIds.delete(id));
+            }
+            renderBody();
+            updateBulkToolbar();
+        });
+    }
 }
 
 function renderBody() {
@@ -312,11 +379,20 @@ function renderBody() {
     const tabletColspan = 1 + COLUMNS.filter((c) => c.tablet !== false).length;
 
     tbody.innerHTML = page.map((sale) => {
+        const isSelected = state.selectedIds.has(sale.id);
+        const rowDisabled = isSelected ? 'disabled' : '';
+
         const dataCells = COLUMNS.map(({ field, label, summary, tablet }) => {
             const tabletClass = tablet === false ? ' col-desktop-only' : '';
             const summaryAttr = summary ? ' data-summary="1"' : '';
             return `<td data-label="${label}"${summaryAttr} class="${tabletClass.trim()}">${renderCell(field, sale)}</td>`;
         }).join('');
+
+        // Per-row checkbox — hidden on mobile
+        const checkboxTd = `
+            <td class="col-checkbox d-none d-sm-table-cell" style="width:1px">
+                <input type="checkbox" class="form-check-input row-checkbox" data-id="${sale.id}" aria-label="Select row" ${isSelected ? 'checked' : ''}>
+            </td>`;
 
         // Tablet toggle cell — left chevron, visible at tablet only (576px–991px)
         const expandTd = `
@@ -346,68 +422,101 @@ function renderBody() {
                 </button>
             </td>`;
 
-        // Actions cell (desktop only)
-        const actionsTd = `
-            <td class="text-end text-nowrap card-actions-cell col-desktop-only">
-                <button class="btn btn-outline-dark btn-sm btn-edit-sale me-1" data-id="${sale.id}" aria-label="Edit">
+        // Mobile actions cell — hidden by default, shown when card is expanded
+        const mobileActionsTd = `
+            <td class="col-mobile-actions">
+                <button class="btn btn-outline-dark btn-sm btn-edit-sale" data-id="${sale.id}" aria-label="Edit" ${rowDisabled}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
                     </svg>
-                    <span class="btn-label ms-1">Edit</span>
                 </button>
-                <button class="btn btn-outline-primary btn-sm btn-mark-paid me-1" data-id="${sale.id}" aria-label="Mark as paid" ${sale.status !== 'SOLD' ? 'disabled' : ''}>
+                <button class="btn btn-outline-primary btn-sm btn-mark-paid" data-id="${sale.id}" aria-label="Mark as paid" ${sale.status !== 'SOLD' || isSelected ? 'disabled' : ''}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v1H1zm0 3h14v7a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 2a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1z"/>
                     </svg>
-                    <span class="btn-label ms-1">Mark Paid</span>
                 </button>
-                <button class="btn btn-outline-success btn-sm btn-mark-shipped me-1" data-id="${sale.id}" aria-label="Mark as shipped" ${sale.status !== 'PAID' ? 'disabled' : ''}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <button class="btn btn-outline-success btn-sm btn-mark-shipped" data-id="${sale.id}" aria-label="Mark as shipped" ${sale.status !== 'PAID' || isSelected ? 'disabled' : ''}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M8.5 6a.5.5 0 0 0-1 0v1.5H6a.5.5 0 0 0 0 1h1.5V10a.5.5 0 0 0 1 0V8.5H10a.5.5 0 0 0 0-1H8.5z"/>
                         <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5zm1.294 7.456A2 2 0 0 1 3 10a2 2 0 0 1 1.732 1H11V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456M12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2m9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2"/>
                     </svg>
-                    <span class="btn-label ms-1">Ship</span>
                 </button>
-                <button class="btn btn-outline-danger btn-sm btn-delete-sale" data-id="${sale.id}" aria-label="Delete">
+                <button class="btn btn-outline-danger btn-sm btn-delete-sale" data-id="${sale.id}" aria-label="Delete" ${rowDisabled}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                         <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
                         <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
                     </svg>
-                    <span class="btn-label ms-1">Delete</span>
                 </button>
             </td>`;
 
-        // Detail row (tablet only) — hidden by default
+        // Actions cell (desktop only) — dropdown hidden when row is selected
+        const actionsTd = `
+            <td class="text-end col-desktop-only">
+                <div class="dropdown${isSelected ? ' invisible' : ''}">
+                    <button class="btn btn-sm btn-actions-menu" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Actions">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0"/>
+                        </svg>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><button class="dropdown-item di-dark btn-edit-sale" data-id="${sale.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                            </svg>Edit
+                        </button></li>
+                        <li><button class="dropdown-item di-primary btn-mark-paid" data-id="${sale.id}" ${sale.status !== 'SOLD' ? 'disabled' : ''}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                <path d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v1H1zm0 3h14v7a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 2a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1z"/>
+                            </svg>Paid
+                        </button></li>
+                        <li><button class="dropdown-item di-success btn-mark-shipped" data-id="${sale.id}" ${sale.status !== 'PAID' ? 'disabled' : ''}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                <path d="M8.5 6a.5.5 0 0 0-1 0v1.5H6a.5.5 0 0 0 0 1h1.5V10a.5.5 0 0 0 1 0V8.5H10a.5.5 0 0 0 0-1H8.5z"/>
+                                <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5zm1.294 7.456A2 2 0 0 1 3 10a2 2 0 0 1 1.732 1H11V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456M12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2m9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2"/>
+                            </svg>Shipped
+                        </button></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><button class="dropdown-item di-danger btn-delete-sale" data-id="${sale.id}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="me-2" viewBox="0 0 16 16">
+                                <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
+                                <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
+                            </svg>Delete
+                        </button></li>
+                    </ul>
+                </div>
+            </td>`;
+
+        // Detail row (tablet only) — hidden by default; all buttons disabled when row is selected
         const detailRow = `
-            <tr class="row-detail d-none d-lg-none">
+            <tr class="row-detail">
                 <td colspan="${tabletColspan}" class="row-detail-cell">
-                    <button class="btn btn-outline-secondary btn-sm btn-view-sale me-1" data-id="${sale.id}" aria-label="View">
+                    <button class="btn btn-outline-secondary btn-sm btn-view-sale me-1" data-id="${sale.id}" aria-label="View" ${rowDisabled}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8M1.173 8a13 13 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5s3.879 1.168 5.168 2.457A13 13 0 0 1 14.828 8q-.086.13-.195.288c-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5s-3.879-1.168-5.168-2.457A13 13 0 0 1 1.172 8z"/>
                             <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5M4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0"/>
                         </svg>
                         View
                     </button>
-                    <button class="btn btn-outline-dark btn-sm btn-edit-sale me-1" data-id="${sale.id}" aria-label="Edit">
+                    <button class="btn btn-outline-dark btn-sm btn-edit-sale me-1" data-id="${sale.id}" aria-label="Edit" ${rowDisabled}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
                         </svg>
                         Edit
                     </button>
-                    <button class="btn btn-outline-primary btn-sm btn-mark-paid me-1" data-id="${sale.id}" aria-label="Mark as paid" ${sale.status !== 'SOLD' ? 'disabled' : ''}>
+                    <button class="btn btn-outline-primary btn-sm btn-mark-paid me-1" data-id="${sale.id}" aria-label="Mark as paid" ${sale.status !== 'SOLD' || isSelected ? 'disabled' : ''}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M1 3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v1H1zm0 3h14v7a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1zm5 2a.5.5 0 0 0 0 1h2a.5.5 0 0 0 0-1z"/>
                         </svg>
-                        Mark Paid
+                        Paid
                     </button>
-                    <button class="btn btn-outline-success btn-sm btn-mark-shipped me-1" data-id="${sale.id}" aria-label="Mark as shipped" ${sale.status !== 'PAID' ? 'disabled' : ''}>
+                    <button class="btn btn-outline-success btn-sm btn-mark-shipped me-1" data-id="${sale.id}" aria-label="Mark as shipped" ${sale.status !== 'PAID' || isSelected ? 'disabled' : ''}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M8.5 6a.5.5 0 0 0-1 0v1.5H6a.5.5 0 0 0 0 1h1.5V10a.5.5 0 0 0 1 0V8.5H10a.5.5 0 0 0 0-1H8.5z"/>
                             <path d="M0 3.5A1.5 1.5 0 0 1 1.5 2h9A1.5 1.5 0 0 1 12 3.5V5h1.02a1.5 1.5 0 0 1 1.17.563l1.481 1.85a1.5 1.5 0 0 1 .329.938V10.5a1.5 1.5 0 0 1-1.5 1.5H14a2 2 0 1 1-4 0H5a2 2 0 1 1-3.998-.085A1.5 1.5 0 0 1 0 10.5zm1.294 7.456A2 2 0 0 1 3 10a2 2 0 0 1 1.732 1H11V3.5a.5.5 0 0 0-.5-.5h-9a.5.5 0 0 0-.5.5v7a.5.5 0 0 0 .294.456M12 10a2 2 0 0 1 1.732 1h.768a.5.5 0 0 0 .5-.5V8.35a.5.5 0 0 0-.11-.312l-1.48-1.85A.5.5 0 0 0 13.02 6H12zm-9 1a1 1 0 1 0 0 2 1 1 0 0 0 0-2m9 0a1 1 0 1 0 0 2 1 1 0 0 0 0-2"/>
                         </svg>
-                        Ship
+                        Shipped
                     </button>
-                    <button class="btn btn-outline-danger btn-sm btn-delete-sale" data-id="${sale.id}" aria-label="Delete">
+                    <button class="btn btn-outline-danger btn-sm btn-delete-sale" data-id="${sale.id}" aria-label="Delete" ${rowDisabled}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
                             <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/>
                             <path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/>
@@ -417,7 +526,7 @@ function renderBody() {
                 </td>
             </tr>`;
 
-        return `<tr data-id="${sale.id}">${expandTd}${dataCells}${actionsTd}${cardToggleTd}</tr>${detailRow}`;
+        return `<tr data-id="${sale.id}">${checkboxTd}${expandTd}${dataCells}${actionsTd}${mobileActionsTd}${cardToggleTd}</tr>${detailRow}`;
     }).join('');
 }
 
@@ -494,7 +603,9 @@ function renderPagination() {
             const p = Number(btn.dataset.page);
             if (p >= 1 && p <= state.totalPages) {
                 state.page = p;
+                state.selectedIds.clear();
                 renderTable();
+                updateBulkToolbar();
             }
         });
     });
@@ -510,7 +621,9 @@ function toggleSort(field) {
         state.sortDir = 'asc';
     }
     state.page = 1;
+    state.selectedIds.clear();
     renderTable();
+    updateBulkToolbar();
 }
 
 function sortSales(list) {
@@ -710,6 +823,141 @@ function sanitizeFormData(raw) {
         }
     }
     return out;
+}
+
+// --- Bulk Actions ---
+
+function getPageIds() {
+    const filtered = applyFilters([...state.sales]);
+    const sorted = sortSales(filtered);
+    const start = (state.page - 1) * PAGE_SIZE;
+    return sorted.slice(start, start + PAGE_SIZE).map((s) => s.id);
+}
+
+function updateBulkToolbar() {
+    const count = state.selectedIds.size;
+    const toolbar = document.getElementById('bulk-toolbar');
+    const countEl = document.getElementById('bulk-count');
+    const paidBtn = document.getElementById('btn-bulk-paid');
+    const shippedBtn = document.getElementById('btn-bulk-shipped');
+    const deleteBtn = document.getElementById('btn-bulk-delete');
+    if (!toolbar) return;
+
+    if (count === 0) {
+        toolbar.classList.add('d-none');
+        toolbar.classList.remove('d-flex');
+        updateWarningToast('paid', false, '');
+        updateWarningToast('shipped', false, '');
+        return;
+    }
+
+    toolbar.classList.remove('d-none');
+    toolbar.classList.add('d-flex');
+    countEl.textContent = `${count} selected`;
+    deleteBtn.disabled = false;
+
+    const selectedSales = state.sales.filter((s) => state.selectedIds.has(s.id));
+
+    const ineligibleForPaid = selectedSales.filter((s) => s.status !== 'SOLD');
+    const ineligibleForShipped = selectedSales.filter((s) => s.status !== 'PAID');
+
+    const paidDisabled = ineligibleForPaid.length > 0;
+    const shippedDisabled = ineligibleForShipped.length > 0;
+
+    paidBtn.disabled = paidDisabled;
+    shippedBtn.disabled = shippedDisabled;
+
+    updateWarningToast('paid', paidDisabled, `${ineligibleForPaid.length} sale(s) cannot be marked as paid.`);
+    updateWarningToast('shipped', shippedDisabled, `${ineligibleForShipped.length} sale(s) cannot be marked as shipped.`);
+
+    // Update select-all checkbox state
+    const pageIds = getPageIds();
+    const selectAllCb = document.getElementById('select-all-checkbox');
+    if (selectAllCb && pageIds.length > 0) {
+        const selectedOnPage = pageIds.filter((id) => state.selectedIds.has(id)).length;
+        selectAllCb.checked = selectedOnPage === pageIds.length;
+        selectAllCb.indeterminate = selectedOnPage > 0 && selectedOnPage < pageIds.length;
+    }
+}
+
+function updateWarningToast(key, show, message) {
+    const existing = warningToastEls[key];
+
+    if (!show) {
+        if (existing) {
+            const instance = bootstrap.Toast.getInstance(existing);
+            if (instance) instance.hide();
+            else existing.remove();
+            warningToastEls[key] = null;
+        }
+        return;
+    }
+
+    if (existing) {
+        existing.querySelector('.toast-body').textContent = message;
+        return;
+    }
+
+    const container = document.getElementById('toast-container');
+    const id = `toast-warning-${key}`;
+    container.insertAdjacentHTML('beforeend', `
+        <div id="${id}" class="toast align-items-center text-bg-warning border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">${escapeHtml(message)}</div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    `);
+    const el = document.getElementById(id);
+    warningToastEls[key] = el;
+    const toast = new bootstrap.Toast(el, { autohide: false });
+    el.addEventListener('hidden.bs.toast', () => {
+        el.remove();
+        warningToastEls[key] = null;
+    });
+    toast.show();
+}
+
+async function bulkMarkPaid() {
+    const today = new Date().toISOString().slice(0, 10);
+    const eligible = state.sales.filter((s) => state.selectedIds.has(s.id) && s.status === 'SOLD');
+    if (!eligible.length) return;
+    try {
+        await Promise.all(eligible.map((s) => updateSale(s.id, { ...saleToFormData(s), paid_date: today })));
+        showToast(`${eligible.length} sale(s) marked as paid.`, 'success');
+        state.selectedIds.clear();
+        await loadSales();
+    } catch (err) {
+        showToast(err.message, 'danger');
+    }
+}
+
+async function bulkMarkShipped() {
+    const today = new Date().toISOString().slice(0, 10);
+    const eligible = state.sales.filter((s) => state.selectedIds.has(s.id) && s.status === 'PAID');
+    if (!eligible.length) return;
+    try {
+        await Promise.all(eligible.map((s) => updateSale(s.id, { ...saleToFormData(s), shipped_date: today })));
+        showToast(`${eligible.length} sale(s) marked as shipped.`, 'success');
+        state.selectedIds.clear();
+        await loadSales();
+    } catch (err) {
+        showToast(err.message, 'danger');
+    }
+}
+
+async function bulkDelete() {
+    const ids = [...state.selectedIds];
+    if (!ids.length) return;
+    if (!confirm(`Delete ${ids.length} sale(s)? This cannot be undone.`)) return;
+    try {
+        await Promise.all(ids.map((id) => deleteSale(id)));
+        showToast(`${ids.length} sale(s) deleted.`, 'success');
+        state.selectedIds.clear();
+        await loadSales();
+    } catch (err) {
+        showToast(err.message, 'danger');
+    }
 }
 
 // --- Utilities ---
