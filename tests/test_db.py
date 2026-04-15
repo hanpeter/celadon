@@ -1,4 +1,5 @@
 import pytest
+from datetime import date
 from unittest.mock import MagicMock, call, patch
 from celadon.models import Customer, Item, Purchase, Purchaser, Sale
 
@@ -42,24 +43,24 @@ class TestPurchaser:
         assert result is None
 
     def test_add_purchaser(self, db_instance, mock_conn):
-        purchaser = Purchaser(None, 'New', True)
+        purchaser = Purchaser(id=None, name='New', is_active=True)
         cur = _make_cursor(fetchone_value=10)
         mock_conn.cursor.return_value = cur
         result = db_instance.add_purchaser(purchaser)
-        cur.execute.assert_called_once_with(Purchaser.INSERT, purchaser.to_dict())
+        cur.execute.assert_called_once_with(Purchaser.INSERT, purchaser.model_dump())
         assert result == 10
 
     def test_update_purchaser(self, db_instance, mock_conn):
-        purchaser = Purchaser(1, 'Updated', False)
+        purchaser = Purchaser(id=1, name='Updated', is_active=False)
         cur = _make_cursor()
         mock_conn.cursor.return_value = cur
         db_instance.update_purchaser(purchaser)
-        cur.execute.assert_called_once_with(Purchaser.UPDATE, purchaser.to_dict())
+        cur.execute.assert_called_once_with(Purchaser.UPDATE, purchaser.model_dump())
 
 
 class TestPurchase:
     def _make_row(self):
-        return {'id': 1, 'purchase_date': '2024-01-01', 'cost': 100.0,
+        return {'id': 1, 'purchase_date': date(2024, 1, 1), 'cost': 100.0,
                 'purchaser_id': 1, 'purchaser_name': 'Eunjin'}
 
     def test_get_purchases(self, db_instance, mock_conn):
@@ -88,21 +89,21 @@ class TestPurchase:
         assert result is None
 
     def test_add_purchase(self, db_instance, mock_conn):
-        from datetime import datetime
-        purchase = Purchase(None, datetime(2024, 1, 1), 100.0, 1, '')
+        purchase = Purchase(id=None, purchase_date=date(2024, 1, 1), cost=100.0,
+                            purchaser_id=1, purchaser_name='')
         cur = _make_cursor(fetchone_value=5)
         mock_conn.cursor.return_value = cur
         result = db_instance.add_purchase(purchase)
-        cur.execute.assert_called_once_with(Purchase.INSERT, purchase.to_dict())
+        cur.execute.assert_called_once_with(Purchase.INSERT, purchase.model_dump())
         assert result == 5
 
     def test_update_purchase(self, db_instance, mock_conn):
-        from datetime import datetime
-        purchase = Purchase(1, datetime(2024, 1, 1), 100.0, 1, '')
+        purchase = Purchase(id=1, purchase_date=date(2024, 1, 1), cost=100.0,
+                            purchaser_id=1, purchaser_name='')
         cur = _make_cursor()
         mock_conn.cursor.return_value = cur
         db_instance.update_purchase(purchase)
-        cur.execute.assert_called_once_with(Purchase.UPDATE, purchase.to_dict())
+        cur.execute.assert_called_once_with(Purchase.UPDATE, purchase.model_dump())
 
 
 class TestItem:
@@ -134,19 +135,19 @@ class TestItem:
         assert result is None
 
     def test_add_item(self, db_instance, mock_conn):
-        item = Item(None, 'Adidas', 'Hat', 1, 25.0)
+        item = Item(id=None, brand='Adidas', name='Hat', quantity=1, cost=25.0)
         cur = _make_cursor(fetchone_value=7)
         mock_conn.cursor.return_value = cur
         result = db_instance.add_item(item)
-        cur.execute.assert_called_once_with(Item.INSERT, item.to_dict())
+        cur.execute.assert_called_once_with(Item.INSERT, item.model_dump())
         assert result == 7
 
     def test_update_item(self, db_instance, mock_conn):
-        item = Item(1, 'Adidas', 'Hat', 3, 30.0)
+        item = Item(id=1, brand='Adidas', name='Hat', quantity=3, cost=30.0)
         cur = _make_cursor()
         mock_conn.cursor.return_value = cur
         db_instance.update_item(item)
-        cur.execute.assert_called_once_with(Item.UPDATE, item.to_dict())
+        cur.execute.assert_called_once_with(Item.UPDATE, item.model_dump())
 
 
 class TestCustomer:
@@ -180,28 +181,32 @@ class TestCustomer:
         assert result is None
 
     def test_add_customer(self, db_instance, mock_conn):
-        customer = Customer(None, 'Bob', 'bobby', '010-9999-8888', '456 Elm St', '67890', 'P456')
+        customer = Customer(id=None, name='Bob', nickname='bobby',
+                            phone_number='010-9999-8888', address='456 Elm St',
+                            postal_code='67890', personal_customs_clearance_code='P456')
         cur = _make_cursor(fetchone_value=3)
         mock_conn.cursor.return_value = cur
         result = db_instance.add_customer(customer)
-        cur.execute.assert_called_once_with(Customer.INSERT, customer.to_dict())
+        cur.execute.assert_called_once_with(Customer.INSERT, customer.model_dump())
         assert result == 3
 
     def test_update_customer(self, db_instance, mock_conn):
-        customer = Customer(1, 'Bob', 'bobby', '010-9999-8888', '456 Elm St', '67890', 'P456')
+        customer = Customer(id=1, name='Bob', nickname='bobby',
+                            phone_number='010-9999-8888', address='456 Elm St',
+                            postal_code='67890', personal_customs_clearance_code='P456')
         cur = _make_cursor()
         mock_conn.cursor.return_value = cur
         db_instance.update_customer(customer)
-        cur.execute.assert_called_once_with(Customer.UPDATE, customer.to_dict())
+        cur.execute.assert_called_once_with(Customer.UPDATE, customer.model_dump())
 
 
 class TestSale:
     def _make_row(self):
-        from datetime import datetime, timezone
+        from datetime import date
         return {
             'id': 1, 'customer_id': 3, 'description': 'Jacket',
             'sale_price_won': 120000, 'shipping_cost_dollar': 15.0,
-            'sales_date': datetime(2024, 2, 1, tzinfo=timezone.utc),
+            'sales_date': date(2024, 2, 1),
             'paid_date': None, 'shipped_date': None,
             'customer_name': 'Bob', 'customer_nickname': 'bobby',
         }
@@ -231,19 +236,19 @@ class TestSale:
         assert result is None
 
     def test_add_sale(self, db_instance, mock_conn):
-        sale = Sale.from_dict({'customer_id': 3, 'description': 'Jacket'})
+        sale = Sale.model_validate({'customer_id': 3, 'description': 'Jacket'})
         cur = _make_cursor(fetchone_value=20)
         mock_conn.cursor.return_value = cur
         result = db_instance.add_sale(sale)
-        cur.execute.assert_called_once_with(Sale.INSERT, sale.to_dict())
+        cur.execute.assert_called_once_with(Sale.INSERT, sale.model_dump(exclude={'status'}))
         assert result == 20
 
     def test_update_sale(self, db_instance, mock_conn):
-        sale = Sale.from_dict({'id': 1, 'customer_id': 3, 'description': 'Jacket'})
+        sale = Sale.model_validate({'id': 1, 'customer_id': 3, 'description': 'Jacket'})
         cur = _make_cursor()
         mock_conn.cursor.return_value = cur
         db_instance.update_sale(sale)
-        cur.execute.assert_called_once_with(Sale.UPDATE, sale.to_dict())
+        cur.execute.assert_called_once_with(Sale.UPDATE, sale.model_dump(exclude={'status'}))
 
     def test_delete_sale(self, db_instance, mock_conn):
         cur = _make_cursor()
