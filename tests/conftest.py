@@ -7,7 +7,7 @@ from celadon.db import Database
 
 os.environ.setdefault('DATABASE_URL', 'postgresql://test:test@localhost/test')
 
-with patch('psycopg2.connect', return_value=MagicMock()):
+with patch('psycopg_pool.ConnectionPool', return_value=MagicMock()):
     from celadon.server import create_server
 
 
@@ -17,8 +17,16 @@ def mock_conn():
 
 
 @pytest.fixture
-def db_instance(mock_conn):
-    return Database(connection=mock_conn)
+def mock_pool(mock_conn):
+    pool = MagicMock()
+    pool.connection.return_value.__enter__ = lambda s: mock_conn
+    pool.connection.return_value.__exit__ = MagicMock(return_value=False)
+    return pool
+
+
+@pytest.fixture
+def db_instance(mock_pool):
+    return Database(pool=mock_pool)
 
 
 @pytest.fixture

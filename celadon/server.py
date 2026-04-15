@@ -1,7 +1,8 @@
 import os
-import psycopg2
+import psycopg
 from datetime import timedelta
 from flask import Flask, request, jsonify, send_from_directory
+from psycopg_pool import ConnectionPool
 from werkzeug.exceptions import BadRequest, HTTPException
 from celadon.db import Database
 from celadon.application import Application
@@ -10,20 +11,26 @@ from celadon.models import Customer, Item, Purchase, Purchaser, Sale
 from celadon.sessions import PostgresSessionInterface
 
 
-def _create_connection():
+def _create_pool():
     database_url = os.environ.get('DATABASE_URL')
     if not database_url:
         raise EnvironmentError('DATABASE_URL environment variable is not set')
-    conn = psycopg2.connect(dsn=database_url)
-    conn.set_session(autocommit=True)
-    return conn
+    try:
+        return ConnectionPool(
+            conninfo=database_url,
+            min_size=1,
+            max_size=10,
+            check=ConnectionPool.check_connection,
+        )
+    except psycopg.Error as e:
+        raise RuntimeError(f'Failed to connect to database: {e}') from e
 
 
-def create_server(connection=None, database=None, application=None):
+def create_server(pool=None, database=None, application=None):
     if database is None:
-        if connection is None:
-            connection = _create_connection()
-        database = Database(connection)
+        if pool is None:
+            pool = _create_pool()
+        database = Database(pool)
     if application is None:
         application = Application(database)
 

@@ -63,9 +63,8 @@ class TestUserModel:
 
 class TestDatabaseGetUserByEmail:
     def test_returns_user_when_found(self, db_instance, mock_conn):
-        from celadon.db import Database
         from tests.test_db import _make_cursor
-        row = (1, 'user@gmail.com', 'Test User', 1)
+        row = {'id': 1, 'email': 'user@gmail.com', 'name': 'Test User', 'organization_id': 1}
         cur = _make_cursor(rows=[row])
         cur.fetchone.return_value = row
         mock_conn.cursor.return_value = cur

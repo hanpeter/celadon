@@ -2,7 +2,7 @@ from textwrap import dedent
 
 
 class Item:
-    SELECT_ALL = 'SELECT * FROM items'
+    SELECT_ALL = 'SELECT id, brand, name, quantity, cost FROM items'
     SELECT_ONE = SELECT_ALL + " WHERE id = %s"
     INSERT = dedent('''\
         INSERT INTO items (brand, name, quantity, cost)

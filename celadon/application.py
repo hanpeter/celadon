@@ -6,11 +6,10 @@ class Application:
         self._database = database
 
     def get_purchaser(self, id):
-        purchasers = self._database.get_purchaser(id)
-
-        if len(purchasers) > 0:
-            return purchasers[0].to_dict()
-        raise NotFound(f'Purchaser {id} not found')
+        purchaser = self._database.get_purchaser(id)
+        if purchaser is None:
+            raise NotFound(f'Purchaser {id} not found')
+        return purchaser.to_dict()
 
     def get_purchasers(self):
         return [purchaser.to_dict() for purchaser in self._database.get_purchasers()]
@@ -24,20 +23,19 @@ class Application:
         return self.get_purchaser(purchaser.id)
 
     def get_purchase(self, id):
-        purchases = self._database.get_purchase(id)
-
-        if len(purchases) > 0:
-            return purchases[0].to_dict()
-        raise NotFound(f'Purchase {id} not found')
+        purchase = self._database.get_purchase(id)
+        if purchase is None:
+            raise NotFound(f'Purchase {id} not found')
+        return purchase.to_dict()
 
     def get_purchases(self):
         return [purchase.to_dict() for purchase in self._database.get_purchases()]
 
     def add_purchase(self, purchase):
-        for item in purchase.items:
-            self._database.add_item(item)
-
-        id = self._database.add_purchase(purchase)
+        with self._database.transaction() as conn:
+            for item in purchase.items:
+                self._database.add_item(item, conn=conn)
+            id = self._database.add_purchase(purchase, conn=conn)
         return self.get_purchase(id)
 
     def update_purchase(self, purchase):
@@ -45,11 +43,10 @@ class Application:
         return self.get_purchase(purchase.id)
 
     def get_item(self, id):
-        items = self._database.get_item(id)
-
-        if len(items) > 0:
-            return items[0].to_dict()
-        raise NotFound(f'Item {id} not found')
+        item = self._database.get_item(id)
+        if item is None:
+            raise NotFound(f'Item {id} not found')
+        return item.to_dict()
 
     def get_items(self):
         return [item.to_dict() for item in self._database.get_items()]
@@ -59,10 +56,10 @@ class Application:
         return self.get_item(item.id)
 
     def get_customer(self, id):
-        customers = self._database.get_customer(id)
-        if len(customers) > 0:
-            return customers[0].to_dict()
-        raise NotFound(f'Customer {id} not found')
+        customer = self._database.get_customer(id)
+        if customer is None:
+            raise NotFound(f'Customer {id} not found')
+        return customer.to_dict()
 
     def get_customers(self):
         return [customer.to_dict() for customer in self._database.get_customers()]
@@ -76,10 +73,10 @@ class Application:
         return self.get_customer(customer.id)
 
     def get_sale(self, id):
-        sales = self._database.get_sale(id)
-        if len(sales) > 0:
-            return sales[0].to_dict()
-        raise NotFound(f'Sale {id} not found')
+        sale = self._database.get_sale(id)
+        if sale is None:
+            raise NotFound(f'Sale {id} not found')
+        return sale.to_dict()
 
     def get_sales(self):
         return [sale.to_dict() for sale in self._database.get_sales()]

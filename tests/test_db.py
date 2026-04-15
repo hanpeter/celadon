@@ -1,5 +1,5 @@
 import pytest
-from unittest.mock import MagicMock, call
+from unittest.mock import MagicMock, call, patch
 from celadon.models import Customer, Item, Purchase, Purchaser, Sale
 
 
@@ -15,7 +15,7 @@ def _make_cursor(rows=None, fetchone_value=None):
 
 class TestPurchaser:
     def test_get_purchasers(self, db_instance, mock_conn):
-        row = (1, 'Eunjin', True)
+        row = {'id': 1, 'name': 'Eunjin', 'is_active': True}
         cur = _make_cursor(rows=[row])
         mock_conn.cursor.return_value = cur
         result = db_instance.get_purchasers()
@@ -25,12 +25,21 @@ class TestPurchaser:
         assert result[0].id == 1
 
     def test_get_purchaser(self, db_instance, mock_conn):
-        row = (2, 'Hyojin', True)
+        row = {'id': 2, 'name': 'Hyojin', 'is_active': True}
         cur = _make_cursor(rows=[row])
+        cur.fetchone.return_value = row
         mock_conn.cursor.return_value = cur
         result = db_instance.get_purchaser(2)
         cur.execute.assert_called_once_with(Purchaser.SELECT_ONE, [2])
-        assert result[0].name == 'Hyojin'
+        assert isinstance(result, Purchaser)
+        assert result.name == 'Hyojin'
+
+    def test_get_purchaser_not_found(self, db_instance, mock_conn):
+        cur = _make_cursor()
+        cur.fetchone.return_value = None
+        mock_conn.cursor.return_value = cur
+        result = db_instance.get_purchaser(99)
+        assert result is None
 
     def test_add_purchaser(self, db_instance, mock_conn):
         purchaser = Purchaser(None, 'New', True)
@@ -50,7 +59,8 @@ class TestPurchaser:
 
 class TestPurchase:
     def _make_row(self):
-        return (1, '2024-01-01', 100.0, 1, 'Eunjin')
+        return {'id': 1, 'purchase_date': '2024-01-01', 'cost': 100.0,
+                'purchaser_id': 1, 'purchaser_name': 'Eunjin'}
 
     def test_get_purchases(self, db_instance, mock_conn):
         cur = _make_cursor(rows=[self._make_row()])
@@ -61,11 +71,21 @@ class TestPurchase:
         assert isinstance(result[0], Purchase)
 
     def test_get_purchase(self, db_instance, mock_conn):
-        cur = _make_cursor(rows=[self._make_row()])
+        row = self._make_row()
+        cur = _make_cursor(rows=[row])
+        cur.fetchone.return_value = row
         mock_conn.cursor.return_value = cur
         result = db_instance.get_purchase(1)
         cur.execute.assert_called_once_with(Purchase.SELECT_ONE, [1])
-        assert result[0].id == 1
+        assert isinstance(result, Purchase)
+        assert result.id == 1
+
+    def test_get_purchase_not_found(self, db_instance, mock_conn):
+        cur = _make_cursor()
+        cur.fetchone.return_value = None
+        mock_conn.cursor.return_value = cur
+        result = db_instance.get_purchase(99)
+        assert result is None
 
     def test_add_purchase(self, db_instance, mock_conn):
         from datetime import datetime
@@ -87,7 +107,7 @@ class TestPurchase:
 
 class TestItem:
     def _make_row(self):
-        return (1, 'Nike', 'Shoes', 2, 99.99)
+        return {'id': 1, 'brand': 'Nike', 'name': 'Shoes', 'quantity': 2, 'cost': 99.99}
 
     def test_get_items(self, db_instance, mock_conn):
         cur = _make_cursor(rows=[self._make_row()])
@@ -97,11 +117,21 @@ class TestItem:
         assert isinstance(result[0], Item)
 
     def test_get_item(self, db_instance, mock_conn):
-        cur = _make_cursor(rows=[self._make_row()])
+        row = self._make_row()
+        cur = _make_cursor(rows=[row])
+        cur.fetchone.return_value = row
         mock_conn.cursor.return_value = cur
         result = db_instance.get_item(1)
         cur.execute.assert_called_once_with(Item.SELECT_ONE, [1])
-        assert result[0].brand == 'Nike'
+        assert isinstance(result, Item)
+        assert result.brand == 'Nike'
+
+    def test_get_item_not_found(self, db_instance, mock_conn):
+        cur = _make_cursor()
+        cur.fetchone.return_value = None
+        mock_conn.cursor.return_value = cur
+        result = db_instance.get_item(99)
+        assert result is None
 
     def test_add_item(self, db_instance, mock_conn):
         item = Item(None, 'Adidas', 'Hat', 1, 25.0)
@@ -121,7 +151,9 @@ class TestItem:
 
 class TestCustomer:
     def _make_row(self):
-        return (1, 'Alice', 'ali', '010-1234-5678', '123 Main St', '12345', 'P123')
+        return {'id': 1, 'name': 'Alice', 'nickname': 'ali',
+                'phone_number': '010-1234-5678', 'address': '123 Main St',
+                'postal_code': '12345', 'personal_customs_clearance_code': 'P123'}
 
     def test_get_customers(self, db_instance, mock_conn):
         cur = _make_cursor(rows=[self._make_row()])
@@ -131,11 +163,21 @@ class TestCustomer:
         assert isinstance(result[0], Customer)
 
     def test_get_customer(self, db_instance, mock_conn):
-        cur = _make_cursor(rows=[self._make_row()])
+        row = self._make_row()
+        cur = _make_cursor(rows=[row])
+        cur.fetchone.return_value = row
         mock_conn.cursor.return_value = cur
         result = db_instance.get_customer(1)
         cur.execute.assert_called_once_with(Customer.SELECT_ONE, [1])
-        assert result[0].name == 'Alice'
+        assert isinstance(result, Customer)
+        assert result.name == 'Alice'
+
+    def test_get_customer_not_found(self, db_instance, mock_conn):
+        cur = _make_cursor()
+        cur.fetchone.return_value = None
+        mock_conn.cursor.return_value = cur
+        result = db_instance.get_customer(99)
+        assert result is None
 
     def test_add_customer(self, db_instance, mock_conn):
         customer = Customer(None, 'Bob', 'bobby', '010-9999-8888', '456 Elm St', '67890', 'P456')
@@ -156,9 +198,13 @@ class TestCustomer:
 class TestSale:
     def _make_row(self):
         from datetime import datetime, timezone
-        return (1, 3, 'Jacket', 120000, 15.0,
-                datetime(2024, 2, 1, tzinfo=timezone.utc), None, None,
-                'Bob', 'bobby')
+        return {
+            'id': 1, 'customer_id': 3, 'description': 'Jacket',
+            'sale_price_won': 120000, 'shipping_cost_dollar': 15.0,
+            'sales_date': datetime(2024, 2, 1, tzinfo=timezone.utc),
+            'paid_date': None, 'shipped_date': None,
+            'customer_name': 'Bob', 'customer_nickname': 'bobby',
+        }
 
     def test_get_sales(self, db_instance, mock_conn):
         cur = _make_cursor(rows=[self._make_row()])
@@ -168,11 +214,21 @@ class TestSale:
         assert isinstance(result[0], Sale)
 
     def test_get_sale(self, db_instance, mock_conn):
-        cur = _make_cursor(rows=[self._make_row()])
+        row = self._make_row()
+        cur = _make_cursor(rows=[row])
+        cur.fetchone.return_value = row
         mock_conn.cursor.return_value = cur
         result = db_instance.get_sale(1)
         cur.execute.assert_called_once_with(Sale.SELECT_ONE, [1])
-        assert result[0].customer_id == 3
+        assert isinstance(result, Sale)
+        assert result.customer_id == 3
+
+    def test_get_sale_not_found(self, db_instance, mock_conn):
+        cur = _make_cursor()
+        cur.fetchone.return_value = None
+        mock_conn.cursor.return_value = cur
+        result = db_instance.get_sale(99)
+        assert result is None
 
     def test_add_sale(self, db_instance, mock_conn):
         sale = Sale.from_dict({'customer_id': 3, 'description': 'Jacket'})
@@ -229,3 +285,21 @@ class TestSession:
         cur.execute.assert_called_once_with(
             'DELETE FROM sessions WHERE id = %s', ['test-sid']
         )
+
+
+class TestTransaction:
+    def test_transaction_yields_connection(self, db_instance, mock_pool, mock_conn):
+        with db_instance.transaction() as conn:
+            assert conn is mock_conn
+
+    def test_transaction_commits_on_success(self, db_instance, mock_pool):
+        with db_instance.transaction():
+            pass
+        mock_pool.connection.return_value.__exit__.assert_called_once()
+
+    def test_transaction_rolls_back_on_exception(self, db_instance, mock_pool):
+        mock_pool.connection.return_value.__exit__.return_value = False
+        with pytest.raises(ValueError):
+            with db_instance.transaction():
+                raise ValueError('boom')
+        mock_pool.connection.return_value.__exit__.assert_called_once()
