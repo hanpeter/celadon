@@ -21,7 +21,7 @@ class Sale:
     SELECT_ALL = dedent('''\
         SELECT sales.id, sales.customer_id, sales.description, sales.sale_price_won,
                sales.shipping_cost_dollar, sales.sales_date, sales.paid_date, sales.shipped_date,
-               customers.name, customers.nickname
+               customers.name AS customer_name, customers.nickname AS customer_nickname
         FROM sales INNER JOIN customers ON sales.customer_id = customers.id
     ''')
     SELECT_ONE = SELECT_ALL + ' WHERE sales.id = %s'

@@ -93,12 +93,28 @@ def _authed_client():
     return client
 
 
-class TestCreateConnection:
+class TestCreatePool:
     def test_missing_database_url_raises(self):
-        from celadon.server import _create_connection
+        from celadon.server import _create_pool
         with patch.dict('os.environ', {}, clear=True):
             with pytest.raises(EnvironmentError, match='DATABASE_URL environment variable is not set'):
-                _create_connection()
+                _create_pool()
+
+    def test_connection_error_raises_runtime_error(self):
+        import psycopg
+        from celadon.server import _create_pool
+        with patch.dict('os.environ', {'DATABASE_URL': 'postgresql://bad/db'}):
+            with patch('celadon.server.ConnectionPool', side_effect=psycopg.OperationalError('refused')):
+                with pytest.raises(RuntimeError, match='Failed to connect to database'):
+                    _create_pool()
+
+    def test_non_operational_psycopg_error_raises_runtime_error(self):
+        import psycopg
+        from celadon.server import _create_pool
+        with patch.dict('os.environ', {'DATABASE_URL': 'postgresql://bad/db'}):
+            with patch('celadon.server.ConnectionPool', side_effect=psycopg.InterfaceError('bad state')):
+                with pytest.raises(RuntimeError, match='Failed to connect to database'):
+                    _create_pool()
 
 
 class TestIndex:

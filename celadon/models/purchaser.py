@@ -1,5 +1,5 @@
 class Purchaser:
-    SELECT_ALL = 'SELECT * FROM purchasers'
+    SELECT_ALL = 'SELECT id, name, is_active FROM purchasers'
     SELECT_ONE = SELECT_ALL + " WHERE purchasers.id = %s"
     INSERT = "INSERT INTO purchasers (name) VALUES (%(name)s) RETURNING id"
     UPDATE = "UPDATE purchasers SET name = %(name)s, is_active = %(is_active)s WHERE id = %(id)s"

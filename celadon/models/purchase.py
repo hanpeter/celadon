@@ -5,7 +5,8 @@ from celadon.models.item import Item
 
 class Purchase:
     SELECT_ALL = dedent('''\
-        SELECT purchases.id, purchases.purchase_date, purchases.cost, purchasers.id, purchasers.name
+        SELECT purchases.id, purchases.purchase_date, purchases.cost,
+               purchasers.id AS purchaser_id, purchasers.name AS purchaser_name
         FROM purchases INNER JOIN purchasers ON purchases.purchaser_id = purchasers.id
     ''')
     SELECT_ONE = SELECT_ALL + " WHERE purchases.id = %s"
