@@ -67,6 +67,14 @@ class TestCustomer:
         assert c.nickname == ''
         assert c.postal_code == ''
 
+    @pytest.mark.parametrize(
+        'bad_name',
+        [1, 1.5, True, [], {}, ['x']],
+    )
+    def test_optional_text_rejects_non_string(self, bad_name):
+        with pytest.raises(ValidationError):
+            Customer.model_validate({'name': bad_name})
+
 
 class TestItem:
     def test_model_validate_full(self):
