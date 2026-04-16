@@ -1,21 +1,14 @@
-class Purchaser:
-    SELECT_ALL = 'SELECT id, name, is_active FROM purchasers'
-    SELECT_ONE = SELECT_ALL + " WHERE purchasers.id = %s"
-    INSERT = "INSERT INTO purchasers (name) VALUES (%(name)s) RETURNING id"
-    UPDATE = "UPDATE purchasers SET name = %(name)s, is_active = %(is_active)s WHERE id = %(id)s"
+from typing import ClassVar
+from pydantic import BaseModel, ConfigDict
 
-    def __init__(self, id, name, is_active):
-        self.id = id
-        self.name = name
-        self.is_active = is_active
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'name': self.name,
-            'is_active': self.is_active,
-        }
+class Purchaser(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    SELECT_ALL: ClassVar[str] = 'SELECT id, name, is_active FROM purchasers'
+    SELECT_ONE: ClassVar[str] = SELECT_ALL + ' WHERE purchasers.id = %s'
+    INSERT: ClassVar[str] = 'INSERT INTO purchasers (name) VALUES (%(name)s) RETURNING id'
+    UPDATE: ClassVar[str] = 'UPDATE purchasers SET name = %(name)s, is_active = %(is_active)s WHERE id = %(id)s'
 
-    @classmethod
-    def from_dict(cls, d):
-        return cls(d.get('id'), d.get('name', ''), d.get('is_active', True))
+    id: int | None = None
+    name: str = ''
+    is_active: bool = True

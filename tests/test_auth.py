@@ -42,9 +42,9 @@ def auth_client():
 # ---------------------------------------------------------------------------
 
 class TestUserModel:
-    def test_to_dict(self):
+    def test_model_dump(self):
         user = _make_user()
-        d = user.to_dict()
+        d = user.model_dump()
         assert d == {
             'id': 1,
             'email': 'user@gmail.com',
@@ -87,12 +87,12 @@ class TestDatabaseGetUserByEmail:
 # ---------------------------------------------------------------------------
 
 class TestApplicationGetUserByEmail:
-    def test_returns_dict_when_user_found(self, mock_db, app_instance):
+    def test_returns_user_when_found(self, mock_db, app_instance):
         user = _make_user()
         mock_db.get_user_by_email.return_value = user
         result = app_instance.get_user_by_email('user@gmail.com')
         mock_db.get_user_by_email.assert_called_once_with('user@gmail.com')
-        assert result == user.to_dict()
+        assert result is user
 
     def test_returns_none_when_user_not_found(self, mock_db, app_instance):
         mock_db.get_user_by_email.return_value = None
@@ -161,7 +161,7 @@ class TestGoogleCallback:
         return {'userinfo': {'email': email, 'name': name}}
 
     def test_known_user_sets_session_and_redirects(self, mock_app):
-        mock_app.get_user_by_email.return_value = _make_user().to_dict()
+        mock_app.get_user_by_email.return_value = _make_user()
         with server_module.server.test_client() as client:
             with patch('celadon.auth.oauth.google.authorize_access_token',
                        return_value=self._mock_token()):

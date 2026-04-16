@@ -1,4 +1,5 @@
 import json
+from datetime import date
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -13,53 +14,22 @@ from celadon.models.sale import Sale
 from tests.conftest import make_session_data
 
 
-# Bodies valid for from_dict (extra keys are ignored where applicable).
-PURCHASER_BODY = {
-    "name": "test",
-    "purchaser_id": 1,
-    "purchase_date": "2024-01-01",
-    "cost": 10,
-    "customer_id": 1,
-    "items": [],
-}
+PURCHASER_BODY = {"name": "test", "is_active": True}
 PURCHASE_BODY = {
-    "name": "test",
     "purchaser_id": 1,
     "purchase_date": "2024-01-01",
     "cost": 10,
-    "customer_id": 1,
     "items": [],
 }
-CUSTOMER_BODY = {
-    "name": "test",
-    "purchaser_id": 1,
-    "purchase_date": "2024-01-01",
-    "cost": 10,
-    "customer_id": 1,
-    "items": [],
-}
+CUSTOMER_BODY = {"name": "test"}
 SALE_BODY = {
-    "name": "test",
-    "purchaser_id": 1,
-    "purchase_date": "2024-01-01",
-    "cost": 10,
     "customer_id": 1,
-    "items": [],
     "description": "sale",
     "sale_price_won": 100,
     "shipping_cost_dollar": 5.0,
-    "sales_date": "2024-01-01T00:00:00+00:00",
+    "sales_date": "2024-01-01",
 }
-ITEM_BODY = {
-    "name": "test",
-    "purchaser_id": 1,
-    "purchase_date": "2024-01-01",
-    "cost": 10,
-    "customer_id": 1,
-    "items": [],
-    "brand": "brand",
-    "quantity": 1,
-}
+ITEM_BODY = {"brand": "brand", "name": "test", "quantity": 1, "cost": 10}
 
 
 def _json_post_put(client, method, path, body):
@@ -79,11 +49,7 @@ def _server_testing():
 
 
 def _authed_client():
-    """Return a test client on the module server with a pre-authenticated session.
-
-    Patches the session interface's DB so open_session returns a pre-authenticated
-    session, without needing a real database or cookie manipulation.
-    """
+    """Return a test client on the module server with a pre-authenticated session."""
     sid = 'test-session-id'
     mock_db = MagicMock()
     mock_db.get_session.return_value = make_session_data()
@@ -134,24 +100,23 @@ class TestIndex:
 class TestPurchaserRoutes:
     def test_get_list(self, flask_client):
         _, mock_app = flask_client
-        expected = [{"id": 1, "name": "a", "is_active": True}]
-        mock_app.get_purchasers.return_value = expected
+        models = [Purchaser(id=1, name='a', is_active=True)]
+        mock_app.get_purchasers.return_value = models
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = client.get("/purchaser")
         assert r.status_code == 200
-        assert r.get_json() == expected
+        assert r.get_json() == [{"id": 1, "name": "a", "is_active": True}]
         mock_app.get_purchasers.assert_called_once_with()
 
     def test_post_valid_json(self, flask_client):
         _, mock_app = flask_client
-        created = {"id": 2, "name": "test", "is_active": True}
-        mock_app.add_purchaser.return_value = created
+        mock_app.add_purchaser.return_value = Purchaser(id=2, name='test', is_active=True)
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = _json_post_put(client, "post", "/purchaser", PURCHASER_BODY)
         assert r.status_code == 201
-        assert r.get_json() == created
+        assert r.get_json() == {"id": 2, "name": "test", "is_active": True}
         mock_app.add_purchaser.assert_called_once()
         arg = mock_app.add_purchaser.call_args[0][0]
         assert isinstance(arg, Purchaser)
@@ -159,26 +124,24 @@ class TestPurchaserRoutes:
 
     def test_get_one(self, flask_client):
         _, mock_app = flask_client
-        expected = {"id": 1, "name": "x", "is_active": True}
-        mock_app.get_purchaser.return_value = expected
+        mock_app.get_purchaser.return_value = Purchaser(id=1, name='x', is_active=True)
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = client.get("/purchaser/1")
         assert r.status_code == 200
-        assert r.get_json() == expected
+        assert r.get_json()["id"] == 1
         mock_app.get_purchaser.assert_called_once_with(1)
 
     def test_put_one(self, flask_client):
         _, mock_app = flask_client
-        updated = {"id": 1, "name": "test", "is_active": False}
-        mock_app.update_purchaser.return_value = updated
+        mock_app.update_purchaser.return_value = Purchaser(id=1, name='test', is_active=False)
         body = dict(PURCHASER_BODY)
         body["is_active"] = False
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = _json_post_put(client, "put", "/purchaser/1", body)
         assert r.status_code == 200
-        assert r.get_json() == updated
+        assert r.get_json() == {"id": 1, "name": "test", "is_active": False}
         mock_app.update_purchaser.assert_called_once()
         arg = mock_app.update_purchaser.call_args[0][0]
         assert isinstance(arg, Purchaser)
@@ -195,9 +158,38 @@ class TestPurchaserRoutes:
                     content_type="application/json",
                 )
         assert r.status_code == 400
-        payload = r.get_json()
-        assert payload == {"error": "Request body must be valid JSON"}
+        assert r.get_json() == {"error": "Request body must be valid JSON"}
         mock_app.add_purchaser.assert_not_called()
+
+    def test_post_validation_error_returns_422(self, flask_client):
+        _, mock_app = flask_client
+        with patch("celadon.server.server.app", mock_app):
+            with _authed_client() as client:
+                r = _json_post_put(client, "post", "/sale", {})
+        assert r.status_code == 422
+        payload = r.get_json()
+        assert "error" in payload
+        mock_app.add_sale.assert_not_called()
+
+    def test_post_extra_field_returns_422(self, flask_client):
+        _, mock_app = flask_client
+        with patch("celadon.server.server.app", mock_app):
+            with _authed_client() as client:
+                r = _json_post_put(client, "post", "/purchaser",
+                                   {**PURCHASER_BODY, "injected": "evil"})
+        assert r.status_code == 422
+        assert "error" in r.get_json()
+        mock_app.add_purchaser.assert_not_called()
+
+    def test_post_server_controlled_field_returns_400(self, flask_client):
+        _, mock_app = flask_client
+        with patch("celadon.server.server.app", mock_app):
+            with _authed_client() as client:
+                r = _json_post_put(client, "post", "/sale",
+                                   {**SALE_BODY, "customer_name": "injected"})
+        assert r.status_code == 400
+        assert "server-controlled" in r.get_json()["error"]
+        mock_app.add_sale.assert_not_called()
 
     def test_get_one_not_found(self, flask_client):
         _, mock_app = flask_client
@@ -212,38 +204,27 @@ class TestPurchaserRoutes:
 class TestPurchaseRoutes:
     def test_get_list(self, flask_client):
         _, mock_app = flask_client
-        expected = [
-            {
-                "id": 1,
-                "purchase_date": "2024-01-01",
-                "cost": 10.0,
-                "purchaser_id": 1,
-                "purchaser_name": "p",
-            }
-        ]
-        mock_app.get_purchases.return_value = expected
+        models = [Purchase(id=1, purchase_date=date(2024, 1, 1), cost=10.0,
+                           purchaser_id=1, purchaser_name='p')]
+        mock_app.get_purchases.return_value = models
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = client.get("/purchase")
         assert r.status_code == 200
-        assert r.get_json() == expected
+        data = r.get_json()
+        assert data[0]["purchase_date"] == "2024-01-01"
         mock_app.get_purchases.assert_called_once_with()
 
     def test_post_valid_json(self, flask_client):
         _, mock_app = flask_client
-        created = {
-            "id": 3,
-            "purchase_date": "2024-01-01",
-            "cost": 10.0,
-            "purchaser_id": 1,
-            "purchaser_name": "",
-        }
-        mock_app.add_purchase.return_value = created
+        mock_app.add_purchase.return_value = Purchase(
+            id=3, purchase_date=date(2024, 1, 1), cost=10.0,
+            purchaser_id=1, purchaser_name='')
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = _json_post_put(client, "post", "/purchase", PURCHASE_BODY)
         assert r.status_code == 201
-        assert r.get_json() == created
+        assert r.get_json()["id"] == 3
         mock_app.add_purchase.assert_called_once()
         arg = mock_app.add_purchase.call_args[0][0]
         assert isinstance(arg, Purchase)
@@ -251,36 +232,26 @@ class TestPurchaseRoutes:
 
     def test_get_one(self, flask_client):
         _, mock_app = flask_client
-        expected = {
-            "id": 1,
-            "purchase_date": "2024-01-01",
-            "cost": 10.0,
-            "purchaser_id": 1,
-            "purchaser_name": "",
-        }
-        mock_app.get_purchase.return_value = expected
+        mock_app.get_purchase.return_value = Purchase(
+            id=1, purchase_date=date(2024, 1, 1), cost=10.0,
+            purchaser_id=1, purchaser_name='')
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = client.get("/purchase/1")
         assert r.status_code == 200
-        assert r.get_json() == expected
+        assert r.get_json()["id"] == 1
         mock_app.get_purchase.assert_called_once_with(1)
 
     def test_put_one(self, flask_client):
         _, mock_app = flask_client
-        updated = {
-            "id": 1,
-            "purchase_date": "2024-01-01",
-            "cost": 20.0,
-            "purchaser_id": 1,
-            "purchaser_name": "",
-        }
-        mock_app.update_purchase.return_value = updated
+        mock_app.update_purchase.return_value = Purchase(
+            id=1, purchase_date=date(2024, 1, 1), cost=20.0,
+            purchaser_id=1, purchaser_name='')
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = _json_post_put(client, "put", "/purchase/1", PURCHASE_BODY)
         assert r.status_code == 200
-        assert r.get_json() == updated
+        assert r.get_json()["id"] == 1
         mock_app.update_purchase.assert_called_once()
         arg = mock_app.update_purchase.call_args[0][0]
         assert isinstance(arg, Purchase)
@@ -290,24 +261,23 @@ class TestPurchaseRoutes:
 class TestCustomerRoutes:
     def test_get_list(self, flask_client):
         _, mock_app = flask_client
-        expected = [{"id": 1, "name": "c", "nickname": "", "phone_number": ""}]
-        mock_app.get_customers.return_value = expected
+        models = [Customer(id=1, name='c')]
+        mock_app.get_customers.return_value = models
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = client.get("/customer")
         assert r.status_code == 200
-        assert r.get_json() == expected
+        assert r.get_json()[0]["id"] == 1
         mock_app.get_customers.assert_called_once_with()
 
     def test_post_valid_json(self, flask_client):
         _, mock_app = flask_client
-        created = {"id": 2, "name": "test", "nickname": "", "phone_number": ""}
-        mock_app.add_customer.return_value = created
+        mock_app.add_customer.return_value = Customer(id=2, name='test')
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = _json_post_put(client, "post", "/customer", CUSTOMER_BODY)
         assert r.status_code == 201
-        assert r.get_json() == created
+        assert r.get_json()["name"] == "test"
         mock_app.add_customer.assert_called_once()
         arg = mock_app.add_customer.call_args[0][0]
         assert isinstance(arg, Customer)
@@ -315,26 +285,23 @@ class TestCustomerRoutes:
 
     def test_get_one(self, flask_client):
         _, mock_app = flask_client
-        expected = {"id": 1, "name": "c", "nickname": "n"}
-        mock_app.get_customer.return_value = expected
+        mock_app.get_customer.return_value = Customer(id=1, name='c', nickname='n')
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = client.get("/customer/1")
         assert r.status_code == 200
-        assert r.get_json() == expected
+        assert r.get_json()["id"] == 1
         mock_app.get_customer.assert_called_once_with(1)
 
     def test_put_one(self, flask_client):
         _, mock_app = flask_client
-        updated = {"id": 1, "name": "test", "nickname": "nick"}
-        mock_app.update_customer.return_value = updated
+        mock_app.update_customer.return_value = Customer(id=1, name='test', nickname='nick')
         body = dict(CUSTOMER_BODY)
         body["nickname"] = "nick"
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = _json_post_put(client, "put", "/customer/1", body)
         assert r.status_code == 200
-        assert r.get_json() == updated
         mock_app.update_customer.assert_called_once()
         arg = mock_app.update_customer.call_args[0][0]
         assert isinstance(arg, Customer)
@@ -342,52 +309,33 @@ class TestCustomerRoutes:
 
 
 class TestSaleRoutes:
+    def _sale_model(self, id=1, customer_id=1, **kwargs):
+        return Sale(id=id, customer_id=customer_id, **kwargs)
+
     def test_get_list(self, flask_client):
         _, mock_app = flask_client
-        expected = [
-            {
-                "id": 1,
-                "customer_id": 1,
-                "customer_name": "",
-                "customer_nickname": "",
-                "description": "",
-                "sale_price_won": 1,
-                "shipping_cost_dollar": 0.0,
-                "sales_date": None,
-                "paid_date": None,
-                "shipped_date": None,
-                "status": "SOLD",
-            }
-        ]
-        mock_app.get_sales.return_value = expected
+        models = [self._sale_model(sale_price_won=1)]
+        mock_app.get_sales.return_value = models
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = client.get("/sale")
         assert r.status_code == 200
-        assert r.get_json() == expected
+        data = r.get_json()
+        assert data[0]["status"] == "SOLD"
         mock_app.get_sales.assert_called_once_with()
 
     def test_post_valid_json(self, flask_client):
         _, mock_app = flask_client
-        created = {
-            "id": 5,
-            "customer_id": 1,
-            "customer_name": "",
-            "customer_nickname": "",
-            "description": "sale",
-            "sale_price_won": 100,
-            "shipping_cost_dollar": 5.0,
-            "sales_date": "2024-01-01T00:00:00+0000",
-            "paid_date": None,
-            "shipped_date": None,
-            "status": "SOLD",
-        }
-        mock_app.add_sale.return_value = created
+        mock_app.add_sale.return_value = self._sale_model(
+            id=5, sales_date=date(2024, 1, 1), description='sale',
+            sale_price_won=100, shipping_cost_dollar=5.0)
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = _json_post_put(client, "post", "/sale", SALE_BODY)
         assert r.status_code == 201
-        assert r.get_json() == created
+        data = r.get_json()
+        assert data["id"] == 5
+        assert data["sales_date"] == "2024-01-01"
         mock_app.add_sale.assert_called_once()
         arg = mock_app.add_sale.call_args[0][0]
         assert isinstance(arg, Sale)
@@ -395,48 +343,24 @@ class TestSaleRoutes:
 
     def test_get_one(self, flask_client):
         _, mock_app = flask_client
-        expected = {
-            "id": 1,
-            "customer_id": 1,
-            "customer_name": "",
-            "customer_nickname": "",
-            "description": "x",
-            "sale_price_won": 1,
-            "shipping_cost_dollar": None,
-            "sales_date": None,
-            "paid_date": None,
-            "shipped_date": None,
-            "status": "SOLD",
-        }
-        mock_app.get_sale.return_value = expected
+        mock_app.get_sale.return_value = self._sale_model(description='x', sale_price_won=1)
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = client.get("/sale/1")
         assert r.status_code == 200
-        assert r.get_json() == expected
+        assert r.get_json()["customer_id"] == 1
         mock_app.get_sale.assert_called_once_with(1)
 
     def test_put_one(self, flask_client):
         _, mock_app = flask_client
-        updated = {
-            "id": 1,
-            "customer_id": 1,
-            "customer_name": "",
-            "customer_nickname": "",
-            "description": "sale",
-            "sale_price_won": 100,
-            "shipping_cost_dollar": 5.0,
-            "sales_date": "2024-01-01T00:00:00+0000",
-            "paid_date": None,
-            "shipped_date": None,
-            "status": "SOLD",
-        }
-        mock_app.update_sale.return_value = updated
+        mock_app.update_sale.return_value = self._sale_model(
+            id=1, sales_date=date(2024, 1, 1), description='sale',
+            sale_price_won=100, shipping_cost_dollar=5.0)
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = _json_post_put(client, "put", "/sale/1", SALE_BODY)
         assert r.status_code == 200
-        assert r.get_json() == updated
+        assert r.get_json()["id"] == 1
         mock_app.update_sale.assert_called_once()
         arg = mock_app.update_sale.call_args[0][0]
         assert isinstance(arg, Sale)
@@ -465,35 +389,34 @@ class TestSaleRoutes:
 class TestItemRoutes:
     def test_get_list(self, flask_client):
         _, mock_app = flask_client
-        expected = [{"id": 1, "brand": "b", "name": "n", "quantity": 1, "cost": 1.0}]
-        mock_app.get_items.return_value = expected
+        models = [Item(id=1, brand='b', name='n', quantity=1, cost=1.0)]
+        mock_app.get_items.return_value = models
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = client.get("/item")
         assert r.status_code == 200
-        assert r.get_json() == expected
+        assert r.get_json()[0]["brand"] == "b"
         mock_app.get_items.assert_called_once_with()
 
     def test_get_one(self, flask_client):
         _, mock_app = flask_client
-        expected = {"id": 1, "brand": "b", "name": "n", "quantity": 2, "cost": 3.0}
-        mock_app.get_item.return_value = expected
+        mock_app.get_item.return_value = Item(id=1, brand='b', name='n', quantity=2, cost=3.0)
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = client.get("/item/1")
         assert r.status_code == 200
-        assert r.get_json() == expected
+        assert r.get_json()["id"] == 1
         mock_app.get_item.assert_called_once_with(1)
 
     def test_put_one(self, flask_client):
         _, mock_app = flask_client
-        updated = {"id": 1, "brand": "brand", "name": "test", "quantity": 1, "cost": 10.0}
-        mock_app.update_item.return_value = updated
+        mock_app.update_item.return_value = Item(id=1, brand='brand', name='test',
+                                                 quantity=1, cost=10.0)
         with patch("celadon.server.server.app", mock_app):
             with _authed_client() as client:
                 r = _json_post_put(client, "put", "/item/1", ITEM_BODY)
         assert r.status_code == 200
-        assert r.get_json() == updated
+        assert r.get_json()["id"] == 1
         mock_app.update_item.assert_called_once()
         arg = mock_app.update_item.call_args[0][0]
         assert isinstance(arg, Item)

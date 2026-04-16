@@ -1,55 +1,46 @@
+from datetime import date, datetime
 from textwrap import dedent
-from datetime import datetime
+from typing import ClassVar
+
+from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
+
 from celadon.models.item import Item
 
 
-class Purchase:
-    SELECT_ALL = dedent('''\
+class Purchase(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    SELECT_ALL: ClassVar[str] = dedent('''\
         SELECT purchases.id, purchases.purchase_date, purchases.cost,
                purchasers.id AS purchaser_id, purchasers.name AS purchaser_name
         FROM purchases INNER JOIN purchasers ON purchases.purchaser_id = purchasers.id
     ''')
-    SELECT_ONE = SELECT_ALL + " WHERE purchases.id = %s"
-    INSERT = dedent('''\
+    SELECT_ONE: ClassVar[str] = SELECT_ALL + ' WHERE purchases.id = %s'
+    INSERT: ClassVar[str] = dedent('''\
         INSERT INTO purchases (purchase_date, cost, purchaser_id)
         VALUES (%(purchase_date)s, %(cost)s, %(purchaser_id)s) RETURNING id
     ''')
-    UPDATE = dedent('''\
+    UPDATE: ClassVar[str] = dedent('''\
         UPDATE purchases
         SET purchase_date = %(purchase_date)s, cost = %(cost)s, purchaser_id = %(purchaser_id)s
         WHERE id = %(id)s
     ''')
 
-    def __init__(self, id, purchase_date, cost, purchaser_id, purchaser_name, items=None):
-        self.id = id
-        self.purchase_date = purchase_date
-        self.cost = float(cost)
-        self.purchaser_id = purchaser_id
-        self.purchaser_name = purchaser_name
-        self.items = items if items is not None else []
+    id: int | None = None
+    purchase_date: date
+    cost: float = 0.0
+    purchaser_id: int
+    purchaser_name: str = ''
+    items: list[Item] = []
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'purchase_date': self.purchase_date.strftime("%Y-%m-%d"),
-            'cost': self.cost,
-            'purchaser_id': self.purchaser_id,
-            'purchaser_name': self.purchaser_name,
-        }
+    SERVER_FIELDS: ClassVar[frozenset[str]] = frozenset({'purchaser_name'})
 
+    @field_validator('purchase_date', mode='before')
     @classmethod
-    def from_dict(cls, d):
-        purchase_date = datetime.strptime(d.get('purchase_date', ''), "%Y-%m-%d")
+    def strip_time(cls, v: date | datetime | str | None) -> date | str | None:
+        if isinstance(v, datetime):
+            return v.date()
+        return v
 
-        purchaser_id = d.get('purchaser_id')
-        if purchaser_id is None:
-            raise ValueError('Invalid purchaser ID')
-
-        return cls(
-            d.get('id'),
-            purchase_date,
-            d.get('cost', 0),
-            purchaser_id,
-            '',
-            [Item.from_dict(i) for i in d.get('items', [])],
-        )
+    @field_serializer('purchase_date', when_used='json')
+    def serialize_date(self, v: date) -> str:
+        return v.isoformat()
