@@ -51,6 +51,30 @@ class TestCustomer:
         }
         assert Customer.model_validate(d).model_dump(mode='json') == d
 
+    def test_model_validate_null_strings_from_db(self):
+        """Postgres NULL maps to None; coerce to '' like empty TEXT columns."""
+        c = Customer.model_validate(
+            {
+                'id': 1,
+                'name': 'Alice',
+                'nickname': None,
+                'phone_number': None,
+                'address': None,
+                'postal_code': None,
+                'personal_customs_clearance_code': None,
+            }
+        )
+        assert c.nickname == ''
+        assert c.postal_code == ''
+
+    @pytest.mark.parametrize(
+        'bad_name',
+        [1, 1.5, True, [], {}, ['x']],
+    )
+    def test_optional_text_rejects_non_string(self, bad_name):
+        with pytest.raises(ValidationError):
+            Customer.model_validate({'name': bad_name})
+
 
 class TestItem:
     def test_model_validate_full(self):
@@ -79,6 +103,13 @@ class TestItem:
         d = {'id': 5, 'brand': 'Adidas', 'name': 'Hat', 'quantity': 3, 'cost': 25.0}
         assert Item.model_validate(d).model_dump(mode='json') == d
 
+    def test_model_validate_null_strings_from_db(self):
+        item = Item.model_validate(
+            {'id': 1, 'brand': None, 'name': None, 'quantity': 1, 'cost': 1.0}
+        )
+        assert item.brand == ''
+        assert item.name == ''
+
 
 class TestPurchaser:
     def test_model_validate_full(self):
@@ -100,6 +131,10 @@ class TestPurchaser:
     def test_model_dump_roundtrip(self):
         d = {'id': 3, 'name': 'Depot', 'is_active': False}
         assert Purchaser.model_validate(d).model_dump(mode='json') == d
+
+    def test_model_validate_null_name_from_db(self):
+        p = Purchaser.model_validate({'id': 1, 'name': None})
+        assert p.name == ''
 
 
 class TestPurchase:
@@ -151,6 +186,14 @@ class TestPurchase:
         dt = datetime(2024, 5, 10, 14, 30, 0, tzinfo=timezone.utc)
         p = Purchase.model_validate({'purchase_date': dt, 'purchaser_id': 1})
         assert p.purchase_date == date(2024, 5, 10)
+
+    def test_model_validate_null_purchaser_name_from_db(self):
+        p = Purchase.model_validate({
+            'purchase_date': '2024-01-01',
+            'purchaser_id': 1,
+            'purchaser_name': None,
+        })
+        assert p.purchaser_name == ''
 
 
 class TestSale:
@@ -257,6 +300,28 @@ class TestSale:
         assert d['paid_date'] is None
         assert d['shipped_date'] is None
         assert d['status'] == 'SOLD'
+
+    def test_model_validate_null_strings_from_db(self):
+        sale = Sale.model_validate({
+            'customer_id': 1,
+            'description': None,
+            'customer_name': None,
+            'customer_nickname': None,
+        })
+        assert sale.description == ''
+        assert sale.customer_name == ''
+        assert sale.customer_nickname == ''
+
+
+class TestUser:
+    def test_model_validate_null_name_from_db(self):
+        u = User.model_validate({
+            'id': 1,
+            'email': 'a@b.com',
+            'name': None,
+            'organization_id': 2,
+        })
+        assert u.name == ''
 
 
 class TestServerFields:

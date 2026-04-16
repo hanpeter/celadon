@@ -1,5 +1,8 @@
 from typing import ClassVar
+
 from pydantic import BaseModel, ConfigDict
+
+from celadon.models.validator import OptionalText
 
 
 class User(BaseModel):
@@ -10,5 +13,5 @@ class User(BaseModel):
 
     id: int
     email: str
-    name: str
+    name: OptionalText = ''
     organization_id: int

@@ -5,6 +5,8 @@ from typing import ClassVar
 
 from pydantic import BaseModel, ConfigDict, computed_field, field_serializer, field_validator
 
+from celadon.models.validator import OptionalText
+
 
 class SaleStatus(Enum):
     SOLD = 'SOLD'
@@ -44,14 +46,14 @@ class Sale(BaseModel):
 
     id: int | None = None
     customer_id: int
-    description: str = ''
+    description: OptionalText = ''
     sale_price_won: int | None = None
     shipping_cost_dollar: float | None = None
     sales_date: date | None = None
     paid_date: date | None = None
     shipped_date: date | None = None
-    customer_name: str = ''
-    customer_nickname: str = ''
+    customer_name: OptionalText = ''
+    customer_nickname: OptionalText = ''
 
     SERVER_FIELDS: ClassVar[frozenset[str]] = frozenset({
         'customer_name', 'customer_nickname', 'status',
