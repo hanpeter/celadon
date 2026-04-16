@@ -18,121 +18,121 @@ class Database:
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(Purchaser.SELECT_ALL)
-                return [Purchaser(**row) for row in cur]
+                return [Purchaser.model_validate(row) for row in cur]
 
     def get_purchaser(self, id):
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(Purchaser.SELECT_ONE, [id])
                 row = cur.fetchone()
-                return Purchaser(**row) if row else None
+                return Purchaser.model_validate(row) if row else None
 
     def add_purchaser(self, purchaser, conn=None):
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
-                cur.execute(Purchaser.INSERT, purchaser.to_dict())
+                cur.execute(Purchaser.INSERT, purchaser.model_dump())
                 return cur.fetchone()[0]
 
     def update_purchaser(self, purchaser, conn=None):
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
-                cur.execute(Purchaser.UPDATE, purchaser.to_dict())
+                cur.execute(Purchaser.UPDATE, purchaser.model_dump())
 
     def get_purchases(self):
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(Purchase.SELECT_ALL)
-                return [Purchase(**row) for row in cur]
+                return [Purchase.model_validate(row) for row in cur]
 
     def get_purchase(self, id):
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(Purchase.SELECT_ONE, [id])
                 row = cur.fetchone()
-                return Purchase(**row) if row else None
+                return Purchase.model_validate(row) if row else None
 
     def add_purchase(self, purchase, conn=None):
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
-                cur.execute(Purchase.INSERT, purchase.to_dict())
+                cur.execute(Purchase.INSERT, purchase.model_dump())
                 return cur.fetchone()[0]
 
     def update_purchase(self, purchase, conn=None):
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
-                cur.execute(Purchase.UPDATE, purchase.to_dict())
+                cur.execute(Purchase.UPDATE, purchase.model_dump())
 
     def get_items(self):
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(Item.SELECT_ALL)
-                return [Item(**row) for row in cur]
+                return [Item.model_validate(row) for row in cur]
 
     def get_item(self, id):
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(Item.SELECT_ONE, [id])
                 row = cur.fetchone()
-                return Item(**row) if row else None
+                return Item.model_validate(row) if row else None
 
     def add_item(self, item, conn=None):
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
-                cur.execute(Item.INSERT, item.to_dict())
+                cur.execute(Item.INSERT, item.model_dump())
                 return cur.fetchone()[0]
 
     def update_item(self, item, conn=None):
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
-                cur.execute(Item.UPDATE, item.to_dict())
+                cur.execute(Item.UPDATE, item.model_dump())
 
     def get_customers(self):
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(Customer.SELECT_ALL)
-                return [Customer(**row) for row in cur]
+                return [Customer.model_validate(row) for row in cur]
 
     def get_customer(self, id):
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(Customer.SELECT_ONE, [id])
                 row = cur.fetchone()
-                return Customer(**row) if row else None
+                return Customer.model_validate(row) if row else None
 
     def add_customer(self, customer, conn=None):
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
-                cur.execute(Customer.INSERT, customer.to_dict())
+                cur.execute(Customer.INSERT, customer.model_dump())
                 return cur.fetchone()[0]
 
     def update_customer(self, customer, conn=None):
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
-                cur.execute(Customer.UPDATE, customer.to_dict())
+                cur.execute(Customer.UPDATE, customer.model_dump())
 
     def get_sales(self):
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(Sale.SELECT_ALL)
-                return [Sale(**row) for row in cur]
+                return [Sale.model_validate(row) for row in cur]
 
     def get_sale(self, id):
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(Sale.SELECT_ONE, [id])
                 row = cur.fetchone()
-                return Sale(**row) if row else None
+                return Sale.model_validate(row) if row else None
 
     def add_sale(self, sale, conn=None):
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
-                cur.execute(Sale.INSERT, sale.to_dict())
+                cur.execute(Sale.INSERT, sale.model_dump(exclude={'status'}))
                 return cur.fetchone()[0]
 
     def update_sale(self, sale, conn=None):
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
             with conn.cursor() as cur:
-                cur.execute(Sale.UPDATE, sale.to_dict())
+                cur.execute(Sale.UPDATE, sale.model_dump(exclude={'status'}))
 
     def delete_sale(self, id, conn=None):
         with (nullcontext(conn) if conn is not None else self._pool.connection()) as conn:
@@ -144,7 +144,7 @@ class Database:
             with conn.cursor(row_factory=dict_row) as cur:
                 cur.execute(User.SELECT_ONE_BY_EMAIL, [email])
                 row = cur.fetchone()
-                return User(**row) if row else None
+                return User.model_validate(row) if row else None
 
     def get_session(self, sid):
         with self._pool.connection() as conn:

@@ -3,6 +3,7 @@ import psycopg
 from datetime import timedelta
 from flask import Flask, request, jsonify, send_from_directory
 from psycopg_pool import ConnectionPool
+from pydantic import ValidationError
 from werkzeug.exceptions import BadRequest, HTTPException
 from celadon.db import Database
 from celadon.application import Application
@@ -55,11 +56,26 @@ def handle_http_exception(e):
     return jsonify({'error': str(e.description)}), e.code
 
 
-def get_request_json():
+@server.errorhandler(ValidationError)
+def handle_validation_error(e):
+    return jsonify({'error': e.errors(include_url=False)}), 422
+
+
+def get_request_json() -> dict:
     body = request.get_json(force=True, silent=True)
     if body is None:
         raise BadRequest('Request body must be valid JSON')
     return body
+
+
+def _check_server_fields(body: dict, *field_sets: frozenset[str]) -> None:
+    server_fields = frozenset().union(*field_sets)
+    sent = server_fields & body.keys()
+    if sent:
+        raise BadRequest(
+            f"Fields are server-controlled and cannot be set by the client: "
+            f"{', '.join(sorted(sent))}"
+        )
 
 
 @server.route('/')
@@ -74,16 +90,16 @@ def index():
 def purchaser(purchaser_id=None):
     if purchaser_id is None:
         if request.method == 'POST':
-            return jsonify(server.app.add_purchaser(Purchaser.from_dict(get_request_json()))), 201
+            model = Purchaser.model_validate(get_request_json())
+            return jsonify(server.app.add_purchaser(model).model_dump(mode='json')), 201
         else:
-            return jsonify(server.app.get_purchasers())
+            return jsonify([p.model_dump(mode='json') for p in server.app.get_purchasers()])
     else:
         if request.method == 'PUT':
-            p = Purchaser.from_dict(get_request_json())
-            p.id = purchaser_id
-            return jsonify(server.app.update_purchaser(p))
+            model = Purchaser.model_validate({**get_request_json(), 'id': purchaser_id})
+            return jsonify(server.app.update_purchaser(model).model_dump(mode='json'))
         else:
-            return jsonify(server.app.get_purchaser(purchaser_id))
+            return jsonify(server.app.get_purchaser(purchaser_id).model_dump(mode='json'))
 
 
 @server.route('/purchase', methods=['GET', 'POST'])
@@ -92,16 +108,22 @@ def purchaser(purchaser_id=None):
 def purchase(purchase_id=None):
     if purchase_id is None:
         if request.method == 'POST':
-            return jsonify(server.app.add_purchase(Purchase.from_dict(get_request_json()))), 201
+            body = get_request_json()
+            _check_server_fields(body, Purchase.SERVER_FIELDS)
+            return jsonify(server.app.add_purchase(
+                Purchase.model_validate(body)
+            ).model_dump(mode='json')), 201
         else:
-            return jsonify(server.app.get_purchases())
+            return jsonify([p.model_dump(mode='json') for p in server.app.get_purchases()])
     else:
         if request.method == 'PUT':
-            p = Purchase.from_dict(get_request_json())
-            p.id = purchase_id
-            return jsonify(server.app.update_purchase(p))
+            body = get_request_json()
+            _check_server_fields(body, Purchase.SERVER_FIELDS)
+            return jsonify(server.app.update_purchase(
+                Purchase.model_validate({**body, 'id': purchase_id})
+            ).model_dump(mode='json'))
         else:
-            return jsonify(server.app.get_purchase(purchase_id))
+            return jsonify(server.app.get_purchase(purchase_id).model_dump(mode='json'))
 
 
 @server.route('/customer', methods=['GET', 'POST'])
@@ -110,16 +132,16 @@ def purchase(purchase_id=None):
 def customer(customer_id=None):
     if customer_id is None:
         if request.method == 'POST':
-            return jsonify(server.app.add_customer(Customer.from_dict(get_request_json()))), 201
+            model = Customer.model_validate(get_request_json())
+            return jsonify(server.app.add_customer(model).model_dump(mode='json')), 201
         else:
-            return jsonify(server.app.get_customers())
+            return jsonify([c.model_dump(mode='json') for c in server.app.get_customers()])
     else:
         if request.method == 'PUT':
-            c = Customer.from_dict(get_request_json())
-            c.id = customer_id
-            return jsonify(server.app.update_customer(c))
+            model = Customer.model_validate({**get_request_json(), 'id': customer_id})
+            return jsonify(server.app.update_customer(model).model_dump(mode='json'))
         else:
-            return jsonify(server.app.get_customer(customer_id))
+            return jsonify(server.app.get_customer(customer_id).model_dump(mode='json'))
 
 
 @server.route('/sale', methods=['GET', 'POST'])
@@ -128,19 +150,25 @@ def customer(customer_id=None):
 def sale(sale_id=None):
     if sale_id is None:
         if request.method == 'POST':
-            return jsonify(server.app.add_sale(Sale.from_dict(get_request_json()))), 201
+            body = get_request_json()
+            _check_server_fields(body, Sale.SERVER_FIELDS)
+            return jsonify(server.app.add_sale(
+                Sale.model_validate(body)
+            ).model_dump(mode='json')), 201
         else:
-            return jsonify(server.app.get_sales())
+            return jsonify([s.model_dump(mode='json') for s in server.app.get_sales()])
     else:
         if request.method == 'PUT':
-            s = Sale.from_dict(get_request_json())
-            s.id = sale_id
-            return jsonify(server.app.update_sale(s))
+            body = get_request_json()
+            _check_server_fields(body, Sale.SERVER_FIELDS)
+            return jsonify(server.app.update_sale(
+                Sale.model_validate({**body, 'id': sale_id})
+            ).model_dump(mode='json'))
         elif request.method == 'DELETE':
             server.app.delete_sale(sale_id)
             return '', 204
         else:
-            return jsonify(server.app.get_sale(sale_id))
+            return jsonify(server.app.get_sale(sale_id).model_dump(mode='json'))
 
 
 @server.route('/item', methods=['GET'])
@@ -148,11 +176,10 @@ def sale(sale_id=None):
 @require_login
 def item(item_id=None):
     if item_id is None:
-        return jsonify(server.app.get_items())
+        return jsonify([i.model_dump(mode='json') for i in server.app.get_items()])
     else:
         if request.method == 'PUT':
-            i = Item.from_dict(get_request_json())
-            i.id = item_id
-            return jsonify(server.app.update_item(i))
+            model = Item.model_validate({**get_request_json(), 'id': item_id})
+            return jsonify(server.app.update_item(model).model_dump(mode='json'))
         else:
-            return jsonify(server.app.get_item(item_id))
+            return jsonify(server.app.get_item(item_id).model_dump(mode='json'))
