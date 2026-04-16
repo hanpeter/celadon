@@ -44,6 +44,15 @@ export function init() {
     loadSales();
 }
 
+/** Clears bulk row selection when entering mobile layout (checkboxes hidden; otherwise Edit stays disabled). */
+export function clearBulkSelectionForMobile() {
+    if (!state.selectedIds.size) return;
+    state.selectedIds.clear();
+    if (!document.getElementById('sale-table')) return;
+    updateBulkToolbar();
+    renderBody();
+}
+
 function renderShell() {
     document.getElementById('app').innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -281,6 +290,7 @@ async function loadSales() {
     try {
         [state.sales, state.customers] = await Promise.all([getSales(), getCustomers()]);
         state.page = 1;
+        state.selectedIds.clear();
         populateCustomerFilter();
         renderTable();
         updateBulkToolbar();

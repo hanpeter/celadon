@@ -1,5 +1,5 @@
 import { init as initCustomers } from './customers.js';
-import { init as initSales } from './sales.js';
+import { init as initSales, clearBulkSelectionForMobile } from './sales.js';
 
 function collapseAllRows() {
     document.querySelectorAll('#table-body tr.card-expanded').forEach((row) => {
@@ -20,6 +20,9 @@ function watchBreakpoints() {
         if (bucket !== lastBucket) {
             lastBucket = bucket;
             collapseAllRows();
+            if (bucket === 'mobile') {
+                clearBulkSelectionForMobile();
+            }
         }
     });
 }
