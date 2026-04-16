@@ -3,7 +3,7 @@ from enum import Enum
 from textwrap import dedent
 from typing import ClassVar
 
-from pydantic import BaseModel, computed_field, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, computed_field, field_serializer, field_validator
 
 
 class SaleStatus(Enum):
@@ -13,6 +13,7 @@ class SaleStatus(Enum):
 
 
 class Sale(BaseModel):
+    model_config = ConfigDict(extra='forbid')
     SELECT_ALL: ClassVar[str] = dedent('''\
         SELECT sales.id, sales.customer_id, sales.description, sales.sale_price_won,
                sales.shipping_cost_dollar, sales.sales_date, sales.paid_date, sales.shipped_date,
@@ -52,9 +53,13 @@ class Sale(BaseModel):
     customer_name: str = ''
     customer_nickname: str = ''
 
+    SERVER_FIELDS: ClassVar[frozenset[str]] = frozenset({
+        'customer_name', 'customer_nickname', 'status',
+    })
+
     @field_validator('sales_date', 'paid_date', 'shipped_date', mode='before')
     @classmethod
-    def strip_time(cls, v):
+    def strip_time(cls, v: date | datetime | str | None) -> date | str | None:
         if isinstance(v, datetime):
             return v.date()
         return v

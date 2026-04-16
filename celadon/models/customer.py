@@ -1,9 +1,10 @@
 from textwrap import dedent
 from typing import ClassVar
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Customer(BaseModel):
+    model_config = ConfigDict(extra='forbid')
     SELECT_ALL: ClassVar[str] = dedent('''\
         SELECT id, name, nickname, phone_number, address, postal_code,
                personal_customs_clearance_code

@@ -58,14 +58,24 @@ def handle_http_exception(e):
 
 @server.errorhandler(ValidationError)
 def handle_validation_error(e):
-    return jsonify({'error': e.errors()}), 422
+    return jsonify({'error': e.errors(include_url=False)}), 422
 
 
-def get_request_json():
+def get_request_json() -> dict:
     body = request.get_json(force=True, silent=True)
     if body is None:
         raise BadRequest('Request body must be valid JSON')
     return body
+
+
+def _check_server_fields(body: dict, *field_sets: frozenset[str]) -> None:
+    server_fields = frozenset().union(*field_sets)
+    sent = server_fields & body.keys()
+    if sent:
+        raise BadRequest(
+            f"Fields are server-controlled and cannot be set by the client: "
+            f"{', '.join(sorted(sent))}"
+        )
 
 
 @server.route('/')
@@ -98,14 +108,20 @@ def purchaser(purchaser_id=None):
 def purchase(purchase_id=None):
     if purchase_id is None:
         if request.method == 'POST':
-            model = Purchase.model_validate(get_request_json())
-            return jsonify(server.app.add_purchase(model).model_dump(mode='json')), 201
+            body = get_request_json()
+            _check_server_fields(body, Purchase.SERVER_FIELDS)
+            return jsonify(server.app.add_purchase(
+                Purchase.model_validate(body)
+            ).model_dump(mode='json')), 201
         else:
             return jsonify([p.model_dump(mode='json') for p in server.app.get_purchases()])
     else:
         if request.method == 'PUT':
-            model = Purchase.model_validate({**get_request_json(), 'id': purchase_id})
-            return jsonify(server.app.update_purchase(model).model_dump(mode='json'))
+            body = get_request_json()
+            _check_server_fields(body, Purchase.SERVER_FIELDS)
+            return jsonify(server.app.update_purchase(
+                Purchase.model_validate({**body, 'id': purchase_id})
+            ).model_dump(mode='json'))
         else:
             return jsonify(server.app.get_purchase(purchase_id).model_dump(mode='json'))
 
@@ -134,14 +150,20 @@ def customer(customer_id=None):
 def sale(sale_id=None):
     if sale_id is None:
         if request.method == 'POST':
-            model = Sale.model_validate(get_request_json())
-            return jsonify(server.app.add_sale(model).model_dump(mode='json')), 201
+            body = get_request_json()
+            _check_server_fields(body, Sale.SERVER_FIELDS)
+            return jsonify(server.app.add_sale(
+                Sale.model_validate(body)
+            ).model_dump(mode='json')), 201
         else:
             return jsonify([s.model_dump(mode='json') for s in server.app.get_sales()])
     else:
         if request.method == 'PUT':
-            model = Sale.model_validate({**get_request_json(), 'id': sale_id})
-            return jsonify(server.app.update_sale(model).model_dump(mode='json'))
+            body = get_request_json()
+            _check_server_fields(body, Sale.SERVER_FIELDS)
+            return jsonify(server.app.update_sale(
+                Sale.model_validate({**body, 'id': sale_id})
+            ).model_dump(mode='json'))
         elif request.method == 'DELETE':
             server.app.delete_sale(sale_id)
             return '', 204

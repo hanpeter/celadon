@@ -6,6 +6,7 @@ from celadon.models.item import Item
 from celadon.models.purchaser import Purchaser
 from celadon.models.purchase import Purchase
 from celadon.models.sale import Sale, SaleStatus
+from celadon.models.user import User
 
 
 class TestCustomer:
@@ -256,3 +257,56 @@ class TestSale:
         assert d['paid_date'] is None
         assert d['shipped_date'] is None
         assert d['status'] == 'SOLD'
+
+
+class TestServerFields:
+    def test_sale_server_fields_declared(self):
+        assert Sale.SERVER_FIELDS == {'customer_name', 'customer_nickname', 'status'}
+
+    def test_purchase_server_fields_declared(self):
+        assert Purchase.SERVER_FIELDS == {'purchaser_name'}
+
+    def test_sale_accepts_server_fields_from_db(self):
+        sale = Sale.model_validate(
+            {'customer_id': 1, 'customer_name': 'Alice', 'customer_nickname': 'ali'}
+        )
+        assert sale.customer_name == 'Alice'
+
+    def test_purchase_accepts_server_fields_from_db(self):
+        purchase = Purchase.model_validate(
+            {'purchase_date': '2024-01-01', 'purchaser_id': 1, 'purchaser_name': 'Alice'}
+        )
+        assert purchase.purchaser_name == 'Alice'
+
+
+class TestExtraFieldsRejected:
+    def test_purchaser_rejects_extra(self):
+        with pytest.raises(ValidationError):
+            Purchaser.model_validate({'name': 'X', 'unexpected': 'value'})
+
+    def test_item_rejects_extra(self):
+        with pytest.raises(ValidationError):
+            Item.model_validate({'name': 'X', 'brand': 'Y', 'injected': True})
+
+    def test_customer_rejects_extra(self):
+        with pytest.raises(ValidationError):
+            Customer.model_validate({'name': 'X', 'admin': True})
+
+    def test_purchase_rejects_extra(self):
+        with pytest.raises(ValidationError):
+            Purchase.model_validate({
+                'purchase_date': '2024-01-01',
+                'purchaser_id': 1,
+                'server_field': 'injected',
+            })
+
+    def test_sale_rejects_extra(self):
+        with pytest.raises(ValidationError):
+            Sale.model_validate({'customer_id': 1, 'internal_field': 'injected'})
+
+    def test_user_rejects_extra(self):
+        with pytest.raises(ValidationError):
+            User.model_validate({
+                'id': 1, 'email': 'a@b.com', 'name': 'X',
+                'organization_id': 1, 'role': 'admin',
+            })

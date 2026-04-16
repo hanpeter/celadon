@@ -171,6 +171,26 @@ class TestPurchaserRoutes:
         assert "error" in payload
         mock_app.add_sale.assert_not_called()
 
+    def test_post_extra_field_returns_422(self, flask_client):
+        _, mock_app = flask_client
+        with patch("celadon.server.server.app", mock_app):
+            with _authed_client() as client:
+                r = _json_post_put(client, "post", "/purchaser",
+                                   {**PURCHASER_BODY, "injected": "evil"})
+        assert r.status_code == 422
+        assert "error" in r.get_json()
+        mock_app.add_purchaser.assert_not_called()
+
+    def test_post_server_controlled_field_returns_400(self, flask_client):
+        _, mock_app = flask_client
+        with patch("celadon.server.server.app", mock_app):
+            with _authed_client() as client:
+                r = _json_post_put(client, "post", "/sale",
+                                   {**SALE_BODY, "customer_name": "injected"})
+        assert r.status_code == 400
+        assert "server-controlled" in r.get_json()["error"]
+        mock_app.add_sale.assert_not_called()
+
     def test_get_one_not_found(self, flask_client):
         _, mock_app = flask_client
         mock_app.get_purchaser.side_effect = NotFound(description="gone")

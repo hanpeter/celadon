@@ -2,12 +2,13 @@ from datetime import date, datetime
 from textwrap import dedent
 from typing import ClassVar
 
-from pydantic import BaseModel, field_serializer, field_validator
+from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 
 from celadon.models.item import Item
 
 
 class Purchase(BaseModel):
+    model_config = ConfigDict(extra='forbid')
     SELECT_ALL: ClassVar[str] = dedent('''\
         SELECT purchases.id, purchases.purchase_date, purchases.cost,
                purchasers.id AS purchaser_id, purchasers.name AS purchaser_name
@@ -31,9 +32,11 @@ class Purchase(BaseModel):
     purchaser_name: str = ''
     items: list[Item] = []
 
+    SERVER_FIELDS: ClassVar[frozenset[str]] = frozenset({'purchaser_name'})
+
     @field_validator('purchase_date', mode='before')
     @classmethod
-    def strip_time(cls, v):
+    def strip_time(cls, v: date | datetime | str | None) -> date | str | None:
         if isinstance(v, datetime):
             return v.date()
         return v

@@ -1,9 +1,10 @@
 from textwrap import dedent
 from typing import ClassVar
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class Item(BaseModel):
+    model_config = ConfigDict(extra='forbid')
     SELECT_ALL: ClassVar[str] = 'SELECT id, brand, name, quantity, cost FROM items'
     SELECT_ONE: ClassVar[str] = SELECT_ALL + ' WHERE id = %s'
     INSERT: ClassVar[str] = dedent('''\
