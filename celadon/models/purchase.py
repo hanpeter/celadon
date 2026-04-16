@@ -5,6 +5,7 @@ from typing import ClassVar
 from pydantic import BaseModel, ConfigDict, field_serializer, field_validator
 
 from celadon.models.item import Item
+from celadon.models.validator import OptionalText
 
 
 class Purchase(BaseModel):
@@ -29,7 +30,7 @@ class Purchase(BaseModel):
     purchase_date: date
     cost: float = 0.0
     purchaser_id: int
-    purchaser_name: str = ''
+    purchaser_name: OptionalText = ''
     items: list[Item] = []
 
     SERVER_FIELDS: ClassVar[frozenset[str]] = frozenset({'purchaser_name'})

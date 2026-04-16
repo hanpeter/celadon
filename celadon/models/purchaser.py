@@ -1,5 +1,8 @@
 from typing import ClassVar
+
 from pydantic import BaseModel, ConfigDict
+
+from celadon.models.validator import OptionalText
 
 
 class Purchaser(BaseModel):
@@ -10,5 +13,5 @@ class Purchaser(BaseModel):
     UPDATE: ClassVar[str] = 'UPDATE purchasers SET name = %(name)s, is_active = %(is_active)s WHERE id = %(id)s'
 
     id: int | None = None
-    name: str = ''
+    name: OptionalText = ''
     is_active: bool = True

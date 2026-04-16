@@ -1,6 +1,9 @@
 from textwrap import dedent
 from typing import ClassVar
+
 from pydantic import BaseModel, ConfigDict
+
+from celadon.models.validator import OptionalText
 
 
 class Item(BaseModel):
@@ -18,7 +21,7 @@ class Item(BaseModel):
     ''')
 
     id: int | None = None
-    brand: str = ''
-    name: str = ''
+    brand: OptionalText = ''
+    name: OptionalText = ''
     quantity: int = 0
     cost: float = 0.0

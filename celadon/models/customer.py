@@ -1,6 +1,9 @@
 from textwrap import dedent
 from typing import ClassVar
+
 from pydantic import BaseModel, ConfigDict
+
+from celadon.models.validator import OptionalText
 
 
 class Customer(BaseModel):
@@ -31,9 +34,9 @@ class Customer(BaseModel):
     ''')
 
     id: int | None = None
-    name: str = ''
-    nickname: str = ''
-    phone_number: str = ''
-    address: str = ''
-    postal_code: str = ''
-    personal_customs_clearance_code: str = ''
+    name: OptionalText = ''
+    nickname: OptionalText = ''
+    phone_number: OptionalText = ''
+    address: OptionalText = ''
+    postal_code: OptionalText = ''
+    personal_customs_clearance_code: OptionalText = ''
