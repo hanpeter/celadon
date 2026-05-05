@@ -18,6 +18,9 @@ dependencies = [
     "pydantic (>=2.0.0,<3.0.0)",
 ]
 
+[project.scripts]
+celadon-migrate = "celadon.migrate:main"
+
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
@@ -27,4 +30,8 @@ dev = [
     "pytest (>=9.0.2,<10.0.0)",
     "pycodestyle (>=2.14.0,<3.0.0)",
     "pytest-cov (>=7.1.0,<8.0.0)"
+]
+migrate = [
+    "yoyo-migrations (>=9.0,<10.0)",
+    "click (>=8.3.3,<9.0.0)"
 ]
