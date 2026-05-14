@@ -31,6 +31,7 @@ class MigrateContext(TypedDict):
     backend: DatabaseBackend
     migrations: MigrationList
 
+
 _LOG = logging.getLogger("celadon.migrate")
 _YOYO_SCHEME = "postgresql+psycopg"
 
