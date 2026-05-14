@@ -21,13 +21,21 @@ from pathlib import Path
 from urllib.parse import urlparse, urlunparse
 
 import click
+from typing import TypedDict
 from yoyo import get_backend, read_migrations
+from yoyo.backends.base import DatabaseBackend
+from yoyo.migrations import MigrationList
+
+
+class MigrateContext(TypedDict):
+    backend: DatabaseBackend
+    migrations: MigrationList
 
 _LOG = logging.getLogger("celadon.migrate")
 _YOYO_SCHEME = "postgresql+psycopg"
 
 
-def _backend_and_migrations(database_url: str, migrations_dir: Path):
+def _backend_and_migrations(database_url: str, migrations_dir: Path) -> tuple[DatabaseBackend, MigrationList]:
     parsed = urlparse(database_url)
     if parsed.scheme in ("postgres", "postgresql"):
         parsed = parsed._replace(scheme=_YOYO_SCHEME)
@@ -62,14 +70,15 @@ def _backend_and_migrations(database_url: str, migrations_dir: Path):
 def main(ctx: click.Context, database_url: str, log_level: str, migrations_dir: Path) -> None:
     logging.basicConfig(level=log_level, format="%(levelname)s %(name)s %(message)s")
     ctx.ensure_object(dict)
-    ctx.obj = {"database_url": database_url, "migrations_dir": migrations_dir}
+    backend, migrations = _backend_and_migrations(database_url, migrations_dir)
+    ctx.obj = {"backend": backend, "migrations": migrations}
 
 
 @main.command()
 @click.pass_obj
-def apply(obj: dict) -> None:
+def apply(obj: MigrateContext) -> None:
     """Apply all pending migrations."""
-    backend, migrations = _backend_and_migrations(obj["database_url"], obj["migrations_dir"])
+    backend, migrations = obj["backend"], obj["migrations"]
     with backend.lock():
         to_apply = backend.to_apply(migrations)
         if not to_apply:
@@ -81,9 +90,9 @@ def apply(obj: dict) -> None:
 
 @main.command(name="list")
 @click.pass_obj
-def list_cmd(obj: dict) -> None:
+def list_cmd(obj: MigrateContext) -> None:
     """List migrations and their applied status (A=applied, U=unapplied)."""
-    backend, migrations = _backend_and_migrations(obj["database_url"], obj["migrations_dir"])
+    backend, migrations = obj["backend"], obj["migrations"]
     applied = {m.id for m in backend.to_rollback(migrations)}
     for m in migrations:
         click.echo(f"{'A' if m.id in applied else 'U'} {m.id}")
@@ -92,9 +101,9 @@ def list_cmd(obj: dict) -> None:
 @main.command()
 @click.option("--count", default=1, show_default=True, help="Number of migrations to roll back.")
 @click.pass_obj
-def rollback(obj: dict, count: int) -> None:
+def rollback(obj: MigrateContext, count: int) -> None:
     """Roll back the last N applied migrations."""
-    backend, migrations = _backend_and_migrations(obj["database_url"], obj["migrations_dir"])
+    backend, migrations = obj["backend"], obj["migrations"]
     with backend.lock():
         to_roll = list(backend.to_rollback(migrations))[:count]
         if not to_roll:
@@ -107,9 +116,9 @@ def rollback(obj: dict, count: int) -> None:
 @main.command()
 @click.argument("migration_id")
 @click.pass_obj
-def mark(obj: dict, migration_id: str) -> None:
+def mark(obj: MigrateContext, migration_id: str) -> None:
     """Mark MIGRATION_ID as applied without running it."""
-    backend, migrations = _backend_and_migrations(obj["database_url"], obj["migrations_dir"])
+    backend, migrations = obj["backend"], obj["migrations"]
     target = next((m for m in migrations if m.id == migration_id), None)
     if target is None:
         raise click.BadParameter(f"Unknown migration: {migration_id}", param_hint="migration_id")
