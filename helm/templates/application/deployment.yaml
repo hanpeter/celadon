@@ -24,6 +24,21 @@ spec:
     spec:
       imagePullSecrets:
         {{- include "celadon.imagePullSecrets" (dict "pullSecrets" .Values.application.image.pullSecrets "ctx" .) | nindent 8 }}
+      {{- if .Values.migrator.enabled }}
+      initContainers:
+        - name: celadon-migrate
+          image: {{ include "celadon.image" (dict "image" .Values.migrator.image "ctx" .) }}
+          imagePullPolicy: {{ .Values.migrator.image.pullPolicy }}
+          env:
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "celadon.database.name" . }}
+                  key: database_url
+            - name: USER
+              value: celadon-migrate
+          resources: {{- toYaml .Values.migrator.resources | nindent 12 }}
+      {{- end }}
       containers:
         - name: {{ include "celadon.application.name" . }}
           image: {{ include "celadon.image" (dict "image" .Values.application.image "ctx" .) }}
