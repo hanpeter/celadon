@@ -12,13 +12,22 @@ env:
 
 jobs:
   build:
-    name: Build
+    name: Build (${{ matrix.image }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
       attestations: write
       id-token: write
+    strategy:
+      matrix:
+        include:
+          - image: hanpeter/celadon
+            file: docker/celadon/Dockerfile
+            cache-scope: celadon
+          - image: hanpeter/celadon-migrator
+            file: docker/celadon-migrator/Dockerfile
+            cache-scope: celadon-migrator
     steps:
       - name: Checkout code
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -35,7 +44,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          images: ${{ env.REGISTRY }}/${{ matrix.image }}
           tags: |
             type=ref,event=pr,enable=${{ github.event_name == 'pull_request' }}
             type=sha,enable=${{ github.event_name == 'push' && github.ref_name == github.event.repository.default_branch }}
@@ -46,17 +55,40 @@ jobs:
       - name: Docker Build
         uses: docker/build-push-action@bcafcacb16a39f128d818304e6c9c0c18556b85f # v7.1.0
         with:
+          file: ${{ matrix.file }}
           push: ${{ github.event_name == 'push' && startsWith(github.ref, 'refs/tags/') }}
           platforms: linux/amd64,linux/arm64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           annotations: ${{ steps.meta.outputs.annotations }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.cache-scope }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.cache-scope }}
+
+  migrate:
+    name: Apply DB migrations
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: false
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
+      - name: Apply yoyo migrations on a one-off Fly machine
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_DEPLOY_TOKEN }}
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY}-migrator:${GITHUB_REF_NAME#v}"
+          echo "Running migrations using image: ${IMAGE}"
+          flyctl machine run "${IMAGE}" \
+            -a celadon \
+            --rm \
+            --command "apply"
 
   deploy:
     name: Deploy to Fly.io
-    needs: build
+    needs: [build, migrate]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     permissions:

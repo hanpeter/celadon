@@ -73,4 +73,4 @@ test: test-lint test-unit
 # build
 # ---------------------------------------------------------------------------
 build:
-	docker build -t "celadon:$(BUILD_TAG)" .
+	docker build -f docker/celadon/Dockerfile -t "celadon:$(BUILD_TAG)" .

@@ -1,14 +1,16 @@
 # Fly.io deployment configuration for celadon.
 #
+# Deployment flow (managed by GitHub Actions on tag pushes v*):
+#   1. Build and push two images to GHCR: celadon:<TAG> and celadon-migrator:<TAG>
+#   2. 'migrate' job: flyctl machine run celadon-migrator:<TAG> -a celadon --rm --command "apply"
+#      - Runs in Fly private network; inherits DATABASE_URL secret (flycast host)
+#      - Applies pending yoyo migrations; idempotent no-op if none pending
+#   3. 'deploy' job: flyctl deploy --image celadon:<TAG>
+#
 # First-time setup:
-#   1. Set the DATABASE_URL secret manually:
+#   1. Set the DATABASE_URL secret:
 #        flyctl secrets set DATABASE_URL="postgres://celadon:<password>@<postgres-app-name>.flycast:5432/celadon" -a celadon
-#   2. Initialize the database schema (one-time, run in order):
-#        flyctl postgres connect -a <postgres-app-name>
-#        \i db/01_init_db.sql
-#        \i db/02_create_tables.sql
-#        \i db/03_migrate_customers.sql
-#   3. Push a v* tag to trigger the first deploy via GitHub Actions.
+#   2. Push a v* tag — migrations run automatically before the app is deployed.
 
 app = "celadon"
 primary_region = "lax"
