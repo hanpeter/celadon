@@ -7,6 +7,8 @@ metadata:
   labels: {{- include "celadon.database.labels" . | nindent 4 }}
   annotations: {{- include "celadon.annotations" . | nindent 4 }}
 data:
-  02_create_tables.sql: |
-    {{- required "helm/files/02_create_tables.sql is missing" (.Files.Get "files/02_create_tables.sql") | nindent 4 }}
+  {{- range $key, $val := .Values.database.initScripts }}
+  {{ $key }}: |
+    {{- tpl $val $ | nindent 4 }}
+  {{- end }}
 {{- end }}

@@ -22,6 +22,8 @@ connection:
   port: "5432"
   # -- Name of the database
   dbName: celadon
+  # -- PostgreSQL schema name. When set, appended to DATABASE_URL as `?options=-csearch_path%3D<schema>`.
+  schema: ""
   # -- Username of the database
   username: ""
   # -- Password of the database
@@ -138,6 +140,35 @@ application:
     # -- Port the service exposes
     port: 80
 
+migrator:
+  # -- Enable running yoyo migrations as an initContainer on application pods
+  enabled: true
+  image:
+    # -- The registry to get the migrate image from
+    # @default -- Defaults to `.Values.global.imageRegistry`
+    registry: ""
+    # -- The repository to get your docker image from
+    repository: celadon-migrator
+    # -- What tagged version of the docker image you want deployed
+    # @default -- Defaults to `.Chart.AppVersion`
+    tag: ""
+    # -- What image pull policy do you want?
+    pullPolicy: IfNotPresent
+    # -- List of image pull secrets for the application image
+    # @default -- Merged with `.Values.global.imagePullSecrets`
+    pullSecrets: []
+  resources:
+    requests:
+      # -- Amount of CPU needed for the migrate initContainer
+      cpu: 100m
+      # -- Amount of memory needed for the migrate initContainer
+      memory: 128Mi
+    limits:
+      # -- CPU limit for the migrate initContainer
+      cpu: 250m
+      # -- Memory limit for the migrate initContainer
+      memory: 256Mi
+
 database:
   # -- Enable database
   enabled: true
@@ -154,7 +185,7 @@ database:
     # -- The repository to get your docker image from
     repository: postgres
     # -- What tagged version of the docker image you want deployed
-    tag: "12"
+    tag: "17"
     # -- What image pull policy do you want?
     pullPolicy: IfNotPresent
     # -- List of image pull secrets for the database image
@@ -206,6 +237,11 @@ database:
     type: ClusterIP
     # -- Port the service exposes
     port: 5432
+  # -- Init scripts run by the bundled Postgres on first startup via docker-entrypoint-initdb.d.
+  #    Keys are filenames (alphabetical order controls execution). Values are SQL strings evaluated
+  #    as Helm templates via tpl(), so chart values like .Values.connection.schema resolve at render time.
+  #    Set to {} to skip init scripts entirely.
+  initScripts: {}
 
 auth:
   # -- Google OAuth client ID from Google Cloud Console
