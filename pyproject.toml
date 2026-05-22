@@ -33,5 +33,5 @@ dev = [
 ]
 migrate = [
     "yoyo-migrations (>=9.0,<10.0)",
-    "click (>=8.3.3,<9.0.0)"
+    "click (>=8.4.1,<9.0.0)"
 ]
