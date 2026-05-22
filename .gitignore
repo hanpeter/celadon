@@ -133,6 +133,7 @@ dmypy.json
 
 # Personal local dev skills (not for sharing)
 .cursor/skills/
+.claude/commands/
 
 # Local environment variables (contains credentials)
 .envrc
