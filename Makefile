@@ -5,7 +5,7 @@ GOOGLE_CLIENT_ID      ?=
 GOOGLE_CLIENT_SECRET  ?=
 FLASK_SESSION_SIGNING_KEY ?=
 
-APP_PORT := 9001
+APP_PORT := 9002
 
 .PHONY: help test test-lint test-unit build run db-migrate db-migrate-list db-migrate-rollback
 
