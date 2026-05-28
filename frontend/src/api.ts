@@ -3,12 +3,16 @@ import type { Customer, Sale } from './types';
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const options: RequestInit = {
     method,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
   };
   if (body !== undefined) {
     options.body = JSON.stringify(body);
   }
   const res = await fetch(path, options);
+  if (res.status === 401) {
+    window.location.href = '/login';
+    return null as T;
+  }
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
     throw new Error(`${method} ${path} failed (${res.status}): ${text}`);
