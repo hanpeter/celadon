@@ -5,7 +5,7 @@ GOOGLE_CLIENT_ID      ?=
 GOOGLE_CLIENT_SECRET  ?=
 FLASK_SESSION_SIGNING_KEY ?=
 
-APP_PORT := 9002
+APP_PORT ?= 9001
 
 .PHONY: help test test-lint test-unit build run db-migrate db-migrate-list db-migrate-rollback
 
@@ -18,8 +18,8 @@ help:
 	@echo "  test-unit               Run unit tests only (pytest)"
 	@echo "  build [BUILD_TAG=latest]"
 	@echo "                          Build the celadon Docker image"
-	@echo "  run [DATABASE_URL=...] [GOOGLE_CLIENT_ID=...] [GOOGLE_CLIENT_SECRET=...] [FLASK_SESSION_SIGNING_KEY=...]"
-	@echo "                          Run the app locally with Flask dev server"
+	@echo "  run [DATABASE_URL=...] [GOOGLE_CLIENT_ID=...] [GOOGLE_CLIENT_SECRET=...] [FLASK_SESSION_SIGNING_KEY=...] [APP_PORT=9001]"
+	@echo "                          Run Flask + Vite watcher concurrently"
 	@echo "  db-migrate [DATABASE_URL=...]"
 	@echo "                          Apply pending database migrations"
 	@echo "  db-migrate-list [DATABASE_URL=...]"
@@ -31,15 +31,18 @@ help:
 # run
 # ---------------------------------------------------------------------------
 run:
-	@test -n "$(DATABASE_URL)"         || (echo "ERROR: DATABASE_URL is required"; exit 1)
-	@test -n "$(GOOGLE_CLIENT_ID)"     || (echo "ERROR: GOOGLE_CLIENT_ID is required"; exit 1)
-	@test -n "$(GOOGLE_CLIENT_SECRET)" || (echo "ERROR: GOOGLE_CLIENT_SECRET is required"; exit 1)
+	@test -n "$(DATABASE_URL)"              || (echo "ERROR: DATABASE_URL is required"; exit 1)
+	@test -n "$(GOOGLE_CLIENT_ID)"          || (echo "ERROR: GOOGLE_CLIENT_ID is required"; exit 1)
+	@test -n "$(GOOGLE_CLIENT_SECRET)"      || (echo "ERROR: GOOGLE_CLIENT_SECRET is required"; exit 1)
 	@test -n "$(FLASK_SESSION_SIGNING_KEY)" || (echo "ERROR: FLASK_SESSION_SIGNING_KEY is required"; exit 1)
+	@trap 'kill 0' EXIT INT TERM; \
+	cd frontend && npm run watch & \
 	DATABASE_URL="$(DATABASE_URL)" \
 	GOOGLE_CLIENT_ID="$(GOOGLE_CLIENT_ID)" \
 	GOOGLE_CLIENT_SECRET="$(GOOGLE_CLIENT_SECRET)" \
 	FLASK_SESSION_SIGNING_KEY="$(FLASK_SESSION_SIGNING_KEY)" \
-	poetry run flask --app celadon.server run --port $(APP_PORT)
+	poetry run flask --app celadon.server run --port $(APP_PORT) & \
+	wait
 
 # ---------------------------------------------------------------------------
 # db-migrate
