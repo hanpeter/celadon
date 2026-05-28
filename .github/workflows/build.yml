@@ -71,7 +71,7 @@ jobs:
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     permissions: {}
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
+      group: migrate-${{ github.ref }}
       cancel-in-progress: false
     steps:
       - uses: superfly/flyctl-actions/setup-flyctl@ed8efb33836e8b2096c7fd3ba1c8afe303ebbff1 # 1.6
