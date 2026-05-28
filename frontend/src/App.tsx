@@ -1,4 +1,4 @@
-import { HashRouter, Routes, Route, NavLink } from 'react-router-dom';
+import { HashRouter, Routes, Route, NavLink } from 'react-router';
 import { Container, Nav, Navbar } from 'react-bootstrap';
 import CustomersPage from './pages/CustomersPage';
 import SalesPage from './pages/SalesPage';
