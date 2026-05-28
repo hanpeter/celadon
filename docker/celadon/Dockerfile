@@ -1,3 +1,15 @@
+FROM node:24-slim AS frontend-builder
+
+WORKDIR /celadon
+
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci
+
+COPY frontend/index.html frontend/login.html frontend/tsconfig.json frontend/vite.config.ts ./
+COPY frontend/src ./src
+
+RUN npm run build
+
 FROM python:3.13-slim AS builder
 
 ENV POETRY_NO_INTERACTION=1 \
@@ -29,5 +41,6 @@ WORKDIR /celadon
 
 COPY --from=builder /celadon/.venv /celadon/.venv
 COPY --from=builder /celadon/celadon /celadon/celadon
+COPY --from=frontend-builder /celadon/static/ /celadon/celadon/static/
 
 ENTRYPOINT ["/celadon/.venv/bin/gunicorn", "celadon.server:server"]

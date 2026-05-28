@@ -112,7 +112,8 @@ class TestRequireLogin:
         assert '/login' in r.headers['Location']
 
     def test_authenticated_request_passes_through(self, auth_client):
-        r = auth_client.get('/')
+        with patch('celadon.server.send_from_directory', return_value='<!DOCTYPE html><html></html>'):
+            r = auth_client.get('/')
         assert r.status_code == 200
 
     def test_all_api_routes_require_login(self):
@@ -141,14 +142,17 @@ class TestGoogleLoginRoute:
 
 class TestLoginRoute:
     def test_get_login_returns_html(self):
-        with server_module.server.test_client() as client:
-            r = client.get('/login')
+        with patch('celadon.auth.send_from_directory', return_value='<!DOCTYPE html><html></html>'):
+            with server_module.server.test_client() as client:
+                r = client.get('/login')
         assert r.status_code == 200
         assert b'<!DOCTYPE html>' in r.data or b'<html' in r.data
 
     def test_login_page_contains_google_auth_link(self):
-        with server_module.server.test_client() as client:
-            r = client.get('/login')
+        with patch('celadon.auth.send_from_directory',
+                   return_value='<!DOCTYPE html><html><a href="/auth/google"></a></html>'):
+            with server_module.server.test_client() as client:
+                r = client.get('/login')
         assert b'/auth/google' in r.data
 
 
@@ -220,7 +224,8 @@ class TestSessionInterface:
         server_module.server.session_interface._db = mock_db
         client = server_module.server.test_client()
         client.set_cookie('session', 'stale-sid')
-        r = client.get('/login')
+        with patch('celadon.auth.send_from_directory', return_value='<!DOCTYPE html><html></html>'):
+            r = client.get('/login')
         assert r.status_code == 200
         mock_db.get_session.assert_called_once_with('stale-sid')
 

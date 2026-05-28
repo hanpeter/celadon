@@ -99,6 +99,10 @@ td[data-label="Description"] {
     pointer-events: none;
 }
 
+.btn-actions-menu.dropdown-toggle::after {
+    display: none;
+}
+
 /* ── Tablet row expand button (chevron only) ──────────────────────────────── */
 
 .btn-row-expand {

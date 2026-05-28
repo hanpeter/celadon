@@ -2,7 +2,7 @@ import hashlib
 import logging
 import os
 import functools
-from flask import Blueprint, session, redirect, url_for, abort, current_app, send_from_directory
+from flask import Blueprint, session, redirect, url_for, abort, current_app, send_from_directory, request, jsonify
 from authlib.integrations.flask_client import OAuth
 
 logger = logging.getLogger(__name__)
@@ -26,6 +26,8 @@ def require_login(f):
     @functools.wraps(f)
     def decorated(*args, **kwargs):
         if not session.get('user_email'):
+            if 'application/json' in request.headers.get('Accept', ''):
+                return jsonify({'error': 'Authentication required'}), 401
             return redirect(url_for('auth.login'))
         return f(*args, **kwargs)
     return decorated

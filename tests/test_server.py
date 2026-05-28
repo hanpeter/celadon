@@ -91,8 +91,9 @@ class TestIndex:
         assert "/login" in r.headers["Location"]
 
     def test_get_root_authenticated_returns_html(self):
-        with _authed_client() as client:
-            r = client.get("/")
+        with patch('celadon.server.send_from_directory', return_value='<!DOCTYPE html><html></html>'):
+            with _authed_client() as client:
+                r = client.get("/")
         assert r.status_code == 200
         assert b"<!DOCTYPE html>" in r.data or b"<html" in r.data
 
