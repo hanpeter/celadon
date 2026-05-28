@@ -41,6 +41,6 @@ WORKDIR /celadon
 
 COPY --from=builder /celadon/.venv /celadon/.venv
 COPY --from=builder /celadon/celadon /celadon/celadon
-COPY --from=frontend-builder /celadon/dist/ /celadon/celadon/static/
+COPY --from=frontend-builder /celadon/static/ /celadon/celadon/static/
 
 ENTRYPOINT ["/celadon/.venv/bin/gunicorn", "celadon.server:server"]
