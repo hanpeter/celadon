@@ -21,7 +21,16 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return res.json() as Promise<T>;
 }
 
-export const getCustomers = () => request<Customer[]>('GET', '/customer');
+export const getCustomers = (params: { q?: string; limit?: number; offset?: number; sort_by?: string; sort_dir?: 'asc' | 'desc' } = {}) => {
+  const qs = new URLSearchParams();
+  if (params.q) qs.set('q', params.q);
+  if (params.limit !== undefined) qs.set('limit', String(params.limit));
+  if (params.offset !== undefined) qs.set('offset', String(params.offset));
+  if (params.sort_by) qs.set('sort_by', params.sort_by);
+  if (params.sort_dir) qs.set('sort_dir', params.sort_dir);
+  const query = qs.toString();
+  return request<{ items: Customer[]; total: number }>('GET', query ? `/customer?${query}` : '/customer');
+};
 export const createCustomer = (data: Record<string, unknown>) =>
   request<Customer>('POST', '/customer', data);
 export const updateCustomer = (id: number, data: Record<string, unknown>) =>

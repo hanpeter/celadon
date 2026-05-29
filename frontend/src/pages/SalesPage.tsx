@@ -39,7 +39,7 @@ interface Toast {
 
 export default function SalesPage() {
   const salesLoad = useLoad(() => getSales());
-  const customersLoad = useLoad(() => getCustomers());
+  const customersLoad = useLoad(() => getCustomers().then((r) => r.items));
 
   const [sortField, setSortField] = useState<keyof Sale>('sales_date');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc');

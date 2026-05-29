@@ -63,8 +63,9 @@ class Application:
             raise NotFound(f'Customer {id} not found')
         return customer
 
-    def get_customers(self) -> list[Customer]:
-        return self._database.get_customers()
+    def get_customers(self, q: str = '', limit: int = 20, offset: int = 0,
+                      sort_by: str = 'name', sort_dir: str = 'asc') -> tuple[list[Customer], int]:
+        return self._database.get_customers(q=q, limit=limit, offset=offset, sort_by=sort_by, sort_dir=sort_dir)
 
     def add_customer(self, customer: Customer) -> Customer:
         id = self._database.add_customer(customer)

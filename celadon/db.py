@@ -86,11 +86,20 @@ class Database:
             with conn.cursor() as cur:
                 cur.execute(Item.UPDATE, item.model_dump())
 
-    def get_customers(self):
+    def get_customers(self, q: str = '', limit: int = 20, offset: int = 0,
+                      sort_by: str = 'name', sort_dir: str = 'asc') -> tuple[list[Customer], int]:
+        escaped = q.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        search_params = {'q': q, 'pattern': f'%{escaped}%'}
+        page_params = {**search_params, 'limit': limit, 'offset': offset}
+        page_query = Customer.SEARCH_PAGE.format(sort_col=sort_by, sort_dir=sort_dir.upper())
         with self._pool.connection() as conn:
             with conn.cursor(row_factory=dict_row) as cur:
-                cur.execute(Customer.SELECT_ALL)
-                return [Customer.model_validate(row) for row in cur]
+                cur.execute(page_query, page_params)
+                items = [Customer.model_validate(row) for row in cur]
+            with conn.cursor() as cur:
+                cur.execute(Customer.SEARCH_COUNT, search_params)
+                total = cur.fetchone()[0]
+        return items, total
 
     def get_customer(self, id):
         with self._pool.connection() as conn:

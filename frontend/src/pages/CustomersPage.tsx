@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Table,
   Button,
@@ -10,10 +10,10 @@ import {
   ToastContainer,
 } from 'react-bootstrap';
 import { getCustomers, createCustomer, updateCustomer } from '../api';
-import { useLoad } from '../hooks/useLoad';
 import type { Customer } from '../types';
 
 const PAGE_SIZE = 20;
+type SortDir = 'asc' | 'desc';
 
 interface Column {
   field: keyof Customer;
@@ -32,8 +32,6 @@ const COLUMNS: Column[] = [
   { field: 'personal_customs_clearance_code', label: 'Customs Code' },
 ];
 
-type SortDir = 'asc' | 'desc';
-
 interface ToastItem {
   id: string;
   message: string;
@@ -44,10 +42,17 @@ interface ToastItem {
 const TABLET_COLSPAN = 1 + COLUMNS.filter((c) => c.tablet !== false).length;
 
 export default function CustomersPage() {
-  const { data: customers, loading, error, load } = useLoad(getCustomers);
-  const [sortField, setSortField] = useState<keyof Customer | null>(null);
-  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [q, setQ] = useState('');
+  const [debouncedQ, setDebouncedQ] = useState('');
   const [page, setPage] = useState(1);
+  const [sortField, setSortField] = useState<keyof Customer>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [items, setItems] = useState<Customer[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const [showModal, setShowModal] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -58,38 +63,53 @@ export default function CustomersPage() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
 
+  // Debounce: flush q → debouncedQ after 300ms of inactivity; reset page on new query
   useEffect(() => {
-    load();
-  }, [load]);
+    const t = setTimeout(() => {
+      setDebouncedQ(q);
+      setPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [q]);
 
-  const sortedCustomers = useCallback(() => {
-    if (!customers) return [];
-    const list = [...customers];
-    if (!sortField) return list;
-    return list.sort((a, b) => {
-      const av = a[sortField] ?? '';
-      const bv = b[sortField] ?? '';
-      const cmp = String(av).localeCompare(String(bv), undefined, {
-        numeric: true,
-        sensitivity: 'base',
+  // Fetch from server whenever query, page, or refreshKey changes
+  useEffect(() => {
+    let ignore = false;
+    setLoading(true);
+    setError(null);
+    getCustomers({ q: debouncedQ, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE, sort_by: sortField, sort_dir: sortDir })
+      .then(({ items: fetched, total: fetchedTotal }) => {
+        if (!ignore) {
+          setItems(fetched);
+          setTotal(fetchedTotal);
+        }
+      })
+      .catch((err) => {
+        if (!ignore) setError(err instanceof Error ? err.message : String(err));
+      })
+      .finally(() => {
+        if (!ignore) setLoading(false);
       });
-      return sortDir === 'asc' ? cmp : -cmp;
-    });
-  }, [customers, sortField, sortDir]);
+    return () => { ignore = true; };
+  }, [debouncedQ, page, sortField, sortDir, refreshKey]);
 
-  const sorted = sortedCustomers();
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
-  const start = (page - 1) * PAGE_SIZE;
-  const pageCustomers = sorted.slice(start, start + PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   const handleSort = (field: keyof Customer) => {
     if (sortField === field) {
-      setSortDir(sortDir === 'asc' ? 'desc' : 'asc');
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
       setSortField(field);
       setSortDir('asc');
     }
     setPage(1);
+  };
+
+  const sortIcon = (field: keyof Customer) => {
+    if (sortField !== field) return <span className="sort-icon text-muted">⇅</span>;
+    return sortDir === 'asc'
+      ? <span className="sort-icon">↑</span>
+      : <span className="sort-icon">↓</span>;
   };
 
   const openAddModal = () => {
@@ -100,7 +120,7 @@ export default function CustomersPage() {
   };
 
   const openEditModal = (id: number) => {
-    const customer = customers?.find((c) => c.id === id);
+    const customer = items.find((c) => c.id === id);
     if (!customer) return;
     setEditingId(id);
     const data: Record<string, string> = {};
@@ -135,7 +155,7 @@ export default function CustomersPage() {
         showToast('Customer added.', 'success');
       }
       setShowModal(false);
-      await load();
+      setRefreshKey((k) => k + 1);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setModalError(msg);
@@ -160,39 +180,40 @@ export default function CustomersPage() {
     });
   };
 
-  const viewingCustomer = customers?.find((c) => c.id === viewingId);
-
-  const sortIcon = (field: keyof Customer) => {
-    if (sortField !== field) return <span className="sort-icon text-muted">⇅</span>;
-    return sortDir === 'asc' ? (
-      <span className="sort-icon">↑</span>
-    ) : (
-      <span className="sort-icon">↓</span>
-    );
-  };
+  const viewingCustomer = items.find((c) => c.id === viewingId);
 
   return (
     <>
       <div className="d-flex justify-content-between align-items-center mb-3">
         <h4 className="mb-0">Customers</h4>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={openAddModal}
-          className="d-flex align-items-center gap-2"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="16"
-            height="16"
-            fill="currentColor"
-            className="bi bi-plus-lg"
-            viewBox="0 0 16 16"
+        <div className="d-flex align-items-center gap-2">
+          <Form.Control
+            type="search"
+            placeholder="Search customers…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            style={{ width: '200px' }}
+            size="sm"
+          />
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={openAddModal}
+            className="d-flex align-items-center gap-2"
           >
-            <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2" />
-          </svg>
-          Add Customer
-        </Button>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              fill="currentColor"
+              className="bi bi-plus-lg"
+              viewBox="0 0 16 16"
+            >
+              <path d="M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2" />
+            </svg>
+            Add Customer
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -204,8 +225,10 @@ export default function CustomersPage() {
       <div className="table-responsive">
         {loading ? (
           <div className="text-center text-muted py-4">Loading…</div>
-        ) : !customers || customers.length === 0 ? (
-          <div className="text-center text-muted py-4">No customers found.</div>
+        ) : items.length === 0 ? (
+          <div className="text-center text-muted py-4">
+            {debouncedQ ? 'No customers match your search.' : 'No customers found.'}
+          </div>
         ) : (
           <Table hover className="align-middle" id="customer-table">
             <thead className="table-light">
@@ -219,9 +242,7 @@ export default function CustomersPage() {
                   <th
                     key={field}
                     scope="col"
-                    className={`sortable-col${
-                      tablet === false ? ' col-desktop-only' : ''
-                    }`}
+                    className={`sortable-col${tablet === false ? ' col-desktop-only' : ''}`}
                     role="button"
                     tabIndex={0}
                     onClick={() => handleSort(field)}
@@ -239,7 +260,7 @@ export default function CustomersPage() {
               </tr>
             </thead>
             <tbody>
-              {pageCustomers.map((customer) => (
+              {items.map((customer) => (
                 <React.Fragment key={customer.id}>
                   <tr
                     data-id={customer.id}
