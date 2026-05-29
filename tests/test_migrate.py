@@ -1,3 +1,4 @@
+import os
 import pytest
 from click.testing import CliRunner
 from unittest.mock import MagicMock, patch
@@ -36,7 +37,9 @@ def _invoke(runner, mig_dir, db_url, *args):
 
 
 def test_missing_database_url(runner, mig_dir):
-    result = runner.invoke(main, ["--migrations-dir", str(mig_dir), "apply"])
+    with patch.dict(os.environ):
+        os.environ.pop('DATABASE_URL', None)
+        result = runner.invoke(main, ["--migrations-dir", str(mig_dir), "apply"])
     assert result.exit_code != 0
 
 
