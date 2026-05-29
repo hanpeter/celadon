@@ -164,7 +164,7 @@ class TestCustomer:
         items, total = db_instance.get_customers()
         page_params = {'q': '', 'pattern': '%%', 'limit': 20, 'offset': 0}
         count_params = {'q': '', 'pattern': '%%'}
-        page_cur.execute.assert_called_once_with(Customer.SEARCH_PAGE, page_params)
+        page_cur.execute.assert_called_once_with(Customer.SEARCH_PAGE.format(sort_col='name', sort_dir='ASC'), page_params)
         count_cur.execute.assert_called_once_with(Customer.SEARCH_COUNT, count_params)
         assert total == 1
         assert isinstance(items[0], Customer)
@@ -177,7 +177,7 @@ class TestCustomer:
         items, total = db_instance.get_customers(q='alice', limit=10, offset=0)
         page_params = {'q': 'alice', 'pattern': '%alice%', 'limit': 10, 'offset': 0}
         count_params = {'q': 'alice', 'pattern': '%alice%'}
-        page_cur.execute.assert_called_once_with(Customer.SEARCH_PAGE, page_params)
+        page_cur.execute.assert_called_once_with(Customer.SEARCH_PAGE.format(sort_col='name', sort_dir='ASC'), page_params)
         count_cur.execute.assert_called_once_with(Customer.SEARCH_COUNT, count_params)
         assert total == 1
         assert items[0].name == 'Alice'
@@ -189,6 +189,14 @@ class TestCustomer:
         db_instance.get_customers(q='50%_off\\sale')
         page_params = page_cur.execute.call_args[0][1]
         assert page_params['pattern'] == '%50\\%\\_off\\\\sale%'
+
+    def test_get_customers_sort(self, db_instance, mock_conn):
+        page_cur = _make_cursor(rows=[self._make_row()])
+        count_cur = _make_cursor(fetchone_value=1)
+        mock_conn.cursor.side_effect = [page_cur, count_cur]
+        db_instance.get_customers(sort_by='nickname', sort_dir='desc')
+        executed_sql = page_cur.execute.call_args[0][0]
+        assert 'nickname DESC' in executed_sql
 
     def test_get_customers_escapes_bare_backslash(self, db_instance, mock_conn):
         page_cur = _make_cursor(rows=[])

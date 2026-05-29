@@ -13,6 +13,7 @@ import { getCustomers, createCustomer, updateCustomer } from '../api';
 import type { Customer } from '../types';
 
 const PAGE_SIZE = 20;
+type SortDir = 'asc' | 'desc';
 
 interface Column {
   field: keyof Customer;
@@ -44,6 +45,8 @@ export default function CustomersPage() {
   const [q, setQ] = useState('');
   const [debouncedQ, setDebouncedQ] = useState('');
   const [page, setPage] = useState(1);
+  const [sortField, setSortField] = useState<keyof Customer>('name');
+  const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [items, setItems] = useState<Customer[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -74,7 +77,7 @@ export default function CustomersPage() {
     let ignore = false;
     setLoading(true);
     setError(null);
-    getCustomers({ q: debouncedQ, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE })
+    getCustomers({ q: debouncedQ, limit: PAGE_SIZE, offset: (page - 1) * PAGE_SIZE, sort_by: sortField, sort_dir: sortDir })
       .then(({ items: fetched, total: fetchedTotal }) => {
         if (!ignore) {
           setItems(fetched);
@@ -88,9 +91,26 @@ export default function CustomersPage() {
         if (!ignore) setLoading(false);
       });
     return () => { ignore = true; };
-  }, [debouncedQ, page, refreshKey]);
+  }, [debouncedQ, page, sortField, sortDir, refreshKey]);
 
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const handleSort = (field: keyof Customer) => {
+    if (sortField === field) {
+      setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDir('asc');
+    }
+    setPage(1);
+  };
+
+  const sortIcon = (field: keyof Customer) => {
+    if (sortField !== field) return <span className="sort-icon text-muted">⇅</span>;
+    return sortDir === 'asc'
+      ? <span className="sort-icon">↑</span>
+      : <span className="sort-icon">↓</span>;
+  };
 
   const openAddModal = () => {
     setEditingId(null);
@@ -222,9 +242,15 @@ export default function CustomersPage() {
                   <th
                     key={field}
                     scope="col"
-                    className={tablet === false ? 'col-desktop-only' : ''}
+                    className={`sortable-col${tablet === false ? ' col-desktop-only' : ''}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => handleSort(field)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') handleSort(field);
+                    }}
                   >
-                    {label}
+                    {label} {sortIcon(field)}
                   </th>
                 ))}
                 {/* Desktop actions column — CSS shows at lg+ */}

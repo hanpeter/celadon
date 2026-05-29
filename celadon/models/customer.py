@@ -13,16 +13,16 @@ class Customer(BaseModel):
         'id, name, nickname, phone_number, address, postal_code, '
         'personal_customs_clearance_code'
     )
-    SEARCHABLE_COLUMNS: ClassVar[tuple[str, ...]] = (
+    TEXT_COLUMNS: ClassVar[tuple[str, ...]] = (
         'name', 'nickname', 'phone_number', 'address', 'postal_code',
         'personal_customs_clearance_code',
     )
     _SEARCH_WHERE: ClassVar[str] = (
         "WHERE (%(q)s = '' OR "
-        + ' OR '.join(f'{col} ILIKE %(pattern)s' for col in SEARCHABLE_COLUMNS)
+        + ' OR '.join(f'{col} ILIKE %(pattern)s' for col in TEXT_COLUMNS)
         + ')'
     )
-    _PAGE_TAIL: ClassVar[str] = 'ORDER BY name ASC LIMIT %(limit)s OFFSET %(offset)s'
+    _PAGE_TAIL: ClassVar[str] = 'ORDER BY {sort_col} {sort_dir} LIMIT %(limit)s OFFSET %(offset)s'
 
     SELECT_ONE: ClassVar[str] = (
         f'SELECT {_SELECT_COLUMNS} FROM customers WHERE id = %s\n'

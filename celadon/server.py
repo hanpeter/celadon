@@ -79,6 +79,22 @@ def _parse_bounded_int(name: str, raw: str | None, *, default: int, lo: int, hi:
     return value
 
 
+def _parse_sort_by(raw: str | None, valid_cols: tuple[str, ...], default: str) -> str:
+    if raw is None:
+        return default
+    if raw not in valid_cols:
+        raise BadRequest(f"'sort_by' must be one of: {', '.join(sorted(valid_cols))}")
+    return raw
+
+
+def _parse_sort_dir(raw: str | None) -> str:
+    if raw is None:
+        return 'asc'
+    if raw.lower() not in ('asc', 'desc'):
+        raise BadRequest("'sort_dir' must be 'asc' or 'desc'")
+    return raw.lower()
+
+
 def _check_server_fields(body: dict, *field_sets: frozenset[str]) -> None:
     server_fields = frozenset().union(*field_sets)
     sent = server_fields & body.keys()
@@ -149,7 +165,9 @@ def customer(customer_id=None):
             q = request.args.get('q', '').strip()
             limit = _parse_bounded_int('limit', request.args.get('limit'), default=20, lo=1, hi=1000)
             offset = _parse_bounded_int('offset', request.args.get('offset'), default=0, lo=0, hi=2_147_483_647)
-            items, total = server.app.get_customers(q=q, limit=limit, offset=offset)
+            sort_by = _parse_sort_by(request.args.get('sort_by'), Customer.TEXT_COLUMNS, 'name')
+            sort_dir = _parse_sort_dir(request.args.get('sort_dir'))
+            items, total = server.app.get_customers(q=q, limit=limit, offset=offset, sort_by=sort_by, sort_dir=sort_dir)
             return jsonify({'items': [c.model_dump(mode='json') for c in items], 'total': total})
     else:
         if request.method == 'PUT':

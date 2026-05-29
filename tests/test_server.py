@@ -271,7 +271,7 @@ class TestCustomerRoutes:
         data = r.get_json()
         assert data["items"][0]["id"] == 1
         assert data["total"] == 1
-        mock_app.get_customers.assert_called_once_with(q='', limit=20, offset=0)
+        mock_app.get_customers.assert_called_once_with(q='', limit=20, offset=0, sort_by='name', sort_dir='asc')
 
     def test_get_list_with_search(self, flask_client):
         _, mock_app = flask_client
@@ -281,7 +281,7 @@ class TestCustomerRoutes:
             with _authed_client() as client:
                 r = client.get("/customer?q=alice")
         assert r.status_code == 200
-        mock_app.get_customers.assert_called_once_with(q='alice', limit=20, offset=0)
+        mock_app.get_customers.assert_called_once_with(q='alice', limit=20, offset=0, sort_by='name', sort_dir='asc')
 
     def test_get_list_with_pagination(self, flask_client):
         _, mock_app = flask_client
@@ -290,7 +290,7 @@ class TestCustomerRoutes:
             with _authed_client() as client:
                 r = client.get("/customer?limit=50&offset=100")
         assert r.status_code == 200
-        mock_app.get_customers.assert_called_once_with(q='', limit=50, offset=100)
+        mock_app.get_customers.assert_called_once_with(q='', limit=50, offset=100, sort_by='name', sort_dir='asc')
 
     def test_get_list_limit_max(self, flask_client):
         _, mock_app = flask_client
@@ -299,7 +299,46 @@ class TestCustomerRoutes:
             with _authed_client() as client:
                 r = client.get("/customer?limit=1000")
         assert r.status_code == 200
-        mock_app.get_customers.assert_called_once_with(q='', limit=1000, offset=0)
+        mock_app.get_customers.assert_called_once_with(q='', limit=1000, offset=0, sort_by='name', sort_dir='asc')
+
+    def test_get_list_sort_valid(self, flask_client):
+        _, mock_app = flask_client
+        mock_app.get_customers.return_value = ([], 0)
+        with patch("celadon.server.server.app", mock_app):
+            with _authed_client() as client:
+                r = client.get("/customer?sort_by=nickname&sort_dir=desc")
+        assert r.status_code == 200
+        mock_app.get_customers.assert_called_once_with(q='', limit=20, offset=0, sort_by='nickname', sort_dir='desc')
+
+    def test_get_list_sort_dir_case_insensitive(self, flask_client):
+        _, mock_app = flask_client
+        mock_app.get_customers.return_value = ([], 0)
+        with patch("celadon.server.server.app", mock_app):
+            with _authed_client() as client:
+                r = client.get("/customer?sort_dir=DESC")
+        assert r.status_code == 200
+        mock_app.get_customers.assert_called_once_with(q='', limit=20, offset=0, sort_by='name', sort_dir='desc')
+
+    def test_get_list_sort_by_invalid(self, flask_client):
+        _, mock_app = flask_client
+        with patch("celadon.server.server.app", mock_app):
+            with _authed_client() as client:
+                r = client.get("/customer?sort_by=invalid_col")
+        assert r.status_code == 400
+
+    def test_get_list_sort_by_id_rejected(self, flask_client):
+        _, mock_app = flask_client
+        with patch("celadon.server.server.app", mock_app):
+            with _authed_client() as client:
+                r = client.get("/customer?sort_by=id")
+        assert r.status_code == 400
+
+    def test_get_list_sort_dir_invalid(self, flask_client):
+        _, mock_app = flask_client
+        with patch("celadon.server.server.app", mock_app):
+            with _authed_client() as client:
+                r = client.get("/customer?sort_dir=diagonal")
+        assert r.status_code == 400
 
     def test_get_list_limit_too_large(self, flask_client):
         _, mock_app = flask_client
