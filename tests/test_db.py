@@ -164,7 +164,8 @@ class TestCustomer:
         items, total = db_instance.get_customers()
         page_params = {'q': '', 'pattern': '%%', 'limit': 20, 'offset': 0}
         count_params = {'q': '', 'pattern': '%%'}
-        page_cur.execute.assert_called_once_with(Customer.SEARCH_PAGE.format(sort_col='name', sort_dir='ASC'), page_params)
+        expected_sql = Customer.SEARCH_PAGE.format(sort_col='name', sort_dir='ASC')
+        page_cur.execute.assert_called_once_with(expected_sql, page_params)
         count_cur.execute.assert_called_once_with(Customer.SEARCH_COUNT, count_params)
         assert total == 1
         assert isinstance(items[0], Customer)
@@ -177,7 +178,8 @@ class TestCustomer:
         items, total = db_instance.get_customers(q='alice', limit=10, offset=0)
         page_params = {'q': 'alice', 'pattern': '%alice%', 'limit': 10, 'offset': 0}
         count_params = {'q': 'alice', 'pattern': '%alice%'}
-        page_cur.execute.assert_called_once_with(Customer.SEARCH_PAGE.format(sort_col='name', sort_dir='ASC'), page_params)
+        expected_sql = Customer.SEARCH_PAGE.format(sort_col='name', sort_dir='ASC')
+        page_cur.execute.assert_called_once_with(expected_sql, page_params)
         count_cur.execute.assert_called_once_with(Customer.SEARCH_COUNT, count_params)
         assert total == 1
         assert items[0].name == 'Alice'

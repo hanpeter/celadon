@@ -86,7 +86,8 @@ class Database:
             with conn.cursor() as cur:
                 cur.execute(Item.UPDATE, item.model_dump())
 
-    def get_customers(self, q: str = '', limit: int = 20, offset: int = 0, sort_by: str = 'name', sort_dir: str = 'asc') -> tuple[list[Customer], int]:
+    def get_customers(self, q: str = '', limit: int = 20, offset: int = 0,
+                      sort_by: str = 'name', sort_dir: str = 'asc') -> tuple[list[Customer], int]:
         escaped = q.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
         search_params = {'q': q, 'pattern': f'%{escaped}%'}
         page_params = {**search_params, 'limit': limit, 'offset': offset}
