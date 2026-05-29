@@ -8,12 +8,29 @@ from celadon.models.validator import OptionalText
 
 class Customer(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    SELECT_ALL: ClassVar[str] = dedent('''\
-        SELECT id, name, nickname, phone_number, address, postal_code,
-               personal_customs_clearance_code
-        FROM customers
-    ''')
-    SELECT_ONE: ClassVar[str] = SELECT_ALL.rstrip() + ' WHERE id = %s\n'
+
+    _SELECT_COLUMNS: ClassVar[str] = (
+        'id, name, nickname, phone_number, address, postal_code, '
+        'personal_customs_clearance_code'
+    )
+    SEARCHABLE_COLUMNS: ClassVar[tuple[str, ...]] = (
+        'name', 'nickname', 'phone_number', 'address', 'postal_code',
+        'personal_customs_clearance_code',
+    )
+    _SEARCH_WHERE: ClassVar[str] = (
+        "WHERE (%(q)s = '' OR "
+        + ' OR '.join(f'{col} ILIKE %(pattern)s' for col in SEARCHABLE_COLUMNS)
+        + ')'
+    )
+    _PAGE_TAIL: ClassVar[str] = 'ORDER BY name ASC LIMIT %(limit)s OFFSET %(offset)s'
+
+    SELECT_ONE: ClassVar[str] = (
+        f'SELECT {_SELECT_COLUMNS} FROM customers WHERE id = %s\n'
+    )
+    SEARCH_PAGE: ClassVar[str] = (
+        f'SELECT {_SELECT_COLUMNS} FROM customers {_SEARCH_WHERE} {_PAGE_TAIL}'
+    )
+    SEARCH_COUNT: ClassVar[str] = f'SELECT COUNT(*) FROM customers {_SEARCH_WHERE}'
     INSERT: ClassVar[str] = dedent('''\
         INSERT INTO customers
             (name, nickname, phone_number, address, postal_code,

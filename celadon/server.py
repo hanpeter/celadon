@@ -68,6 +68,17 @@ def get_request_json() -> dict:
     return body
 
 
+def _parse_bounded_int(name: str, raw: str | None, *, default: int, lo: int, hi: int) -> int:
+    if raw is None:
+        return default
+    if not raw.lstrip('-').isdigit():
+        raise BadRequest(f"'{name}' must be an integer")
+    value = int(raw)
+    if not (lo <= value <= hi):
+        raise BadRequest(f"'{name}' must be between {lo} and {hi}")
+    return value
+
+
 def _check_server_fields(body: dict, *field_sets: frozenset[str]) -> None:
     server_fields = frozenset().union(*field_sets)
     sent = server_fields & body.keys()
@@ -135,7 +146,11 @@ def customer(customer_id=None):
             model = Customer.model_validate(get_request_json())
             return jsonify(server.app.add_customer(model).model_dump(mode='json')), 201
         else:
-            return jsonify([c.model_dump(mode='json') for c in server.app.get_customers()])
+            q = request.args.get('q', '').strip()
+            limit = _parse_bounded_int('limit', request.args.get('limit'), default=20, lo=1, hi=1000)
+            offset = _parse_bounded_int('offset', request.args.get('offset'), default=0, lo=0, hi=2_147_483_647)
+            items, total = server.app.get_customers(q=q, limit=limit, offset=offset)
+            return jsonify({'items': [c.model_dump(mode='json') for c in items], 'total': total})
     else:
         if request.method == 'PUT':
             model = Customer.model_validate({**get_request_json(), 'id': customer_id})

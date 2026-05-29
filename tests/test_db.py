@@ -156,12 +156,55 @@ class TestCustomer:
                 'phone_number': '010-1234-5678', 'address': '123 Main St',
                 'postal_code': '12345', 'personal_customs_clearance_code': 'P123'}
 
-    def test_get_customers(self, db_instance, mock_conn):
-        cur = _make_cursor(rows=[self._make_row()])
-        mock_conn.cursor.return_value = cur
-        result = db_instance.get_customers()
-        cur.execute.assert_called_once_with(Customer.SELECT_ALL)
-        assert isinstance(result[0], Customer)
+    def test_get_customers_default(self, db_instance, mock_conn):
+        row = self._make_row()
+        page_cur = _make_cursor(rows=[row])
+        count_cur = _make_cursor(fetchone_value=1)
+        mock_conn.cursor.side_effect = [page_cur, count_cur]
+        items, total = db_instance.get_customers()
+        page_params = {'q': '', 'pattern': '%%', 'limit': 20, 'offset': 0}
+        count_params = {'q': '', 'pattern': '%%'}
+        page_cur.execute.assert_called_once_with(Customer.SEARCH_PAGE, page_params)
+        count_cur.execute.assert_called_once_with(Customer.SEARCH_COUNT, count_params)
+        assert total == 1
+        assert isinstance(items[0], Customer)
+
+    def test_get_customers_search(self, db_instance, mock_conn):
+        row = self._make_row()
+        page_cur = _make_cursor(rows=[row])
+        count_cur = _make_cursor(fetchone_value=1)
+        mock_conn.cursor.side_effect = [page_cur, count_cur]
+        items, total = db_instance.get_customers(q='alice', limit=10, offset=0)
+        page_params = {'q': 'alice', 'pattern': '%alice%', 'limit': 10, 'offset': 0}
+        count_params = {'q': 'alice', 'pattern': '%alice%'}
+        page_cur.execute.assert_called_once_with(Customer.SEARCH_PAGE, page_params)
+        count_cur.execute.assert_called_once_with(Customer.SEARCH_COUNT, count_params)
+        assert total == 1
+        assert items[0].name == 'Alice'
+
+    def test_get_customers_escapes_special_chars(self, db_instance, mock_conn):
+        page_cur = _make_cursor(rows=[])
+        count_cur = _make_cursor(fetchone_value=0)
+        mock_conn.cursor.side_effect = [page_cur, count_cur]
+        db_instance.get_customers(q='50%_off\\sale')
+        page_params = page_cur.execute.call_args[0][1]
+        assert page_params['pattern'] == '%50\\%\\_off\\\\sale%'
+
+    def test_get_customers_escapes_bare_backslash(self, db_instance, mock_conn):
+        page_cur = _make_cursor(rows=[])
+        count_cur = _make_cursor(fetchone_value=0)
+        mock_conn.cursor.side_effect = [page_cur, count_cur]
+        db_instance.get_customers(q='\\')
+        page_params = page_cur.execute.call_args[0][1]
+        assert page_params['pattern'] == '%\\\\%'
+
+    def test_get_customers_escapes_backslash_before_percent(self, db_instance, mock_conn):
+        page_cur = _make_cursor(rows=[])
+        count_cur = _make_cursor(fetchone_value=0)
+        mock_conn.cursor.side_effect = [page_cur, count_cur]
+        db_instance.get_customers(q='test\\%pattern')
+        page_params = page_cur.execute.call_args[0][1]
+        assert page_params['pattern'] == '%test\\\\\\%pattern%'
 
     def test_get_customer(self, db_instance, mock_conn):
         row = self._make_row()
