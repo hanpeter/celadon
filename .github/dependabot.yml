@@ -8,7 +8,8 @@ updates:
       prefix: "chore"
       include: "scope"
   - package-ecosystem: "helm"
-    directory: "/"
+    directories:
+      - "/**"
     schedule:
       interval: "weekly"
     commit-message:
@@ -16,6 +17,14 @@ updates:
       include: "scope"
   - package-ecosystem: "pip"
     directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+  - package-ecosystem: "npm"
+    directories:
+      - "/**"
     schedule:
       interval: "weekly"
     commit-message:
