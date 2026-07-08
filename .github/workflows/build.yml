@@ -14,6 +14,7 @@ jobs:
   build:
     name: Build (${{ matrix.image }})
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
@@ -68,6 +69,7 @@ jobs:
     name: Apply DB migrations
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     permissions: {}
     concurrency:
@@ -91,6 +93,7 @@ jobs:
     name: Deploy to Fly.io
     needs: [build, migrate]
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: read
