@@ -185,7 +185,7 @@ database:
     # -- The repository to get your docker image from
     repository: postgres
     # -- What tagged version of the docker image you want deployed
-    tag: "17"
+    tag: "18"
     # -- What image pull policy do you want?
     pullPolicy: IfNotPresent
     # -- List of image pull secrets for the database image
