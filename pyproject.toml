@@ -7,7 +7,8 @@ authors = [
 ]
 license = {text = "MIT"}
 readme = "README.md"
-requires-python = ">=3.13,<4.0"
+# Docker runs Python 3.13 (python:3.13-slim), so the Python version is locked to 3.13
+requires-python = ">=3.13,<3.14"
 dependencies = [
     "flask (>=3.1.3,<4.0.0)",
     "gunicorn (>=26.0.0,<27.0.0)",
