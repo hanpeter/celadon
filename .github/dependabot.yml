@@ -7,6 +7,22 @@ updates:
     commit-message:
       prefix: "chore"
       include: "scope"
+  - package-ecosystem: "docker"
+    directories:
+      - "/docker/celadon"
+      - "/docker/celadon-migrator"
+    schedule:
+      interval: "weekly"
+    ignore:
+      # Distroless python3-debian13 only supports Python 3.13
+      - dependency-name: "python"
+        versions: [">= 3.14"]
+      # Stick to LTS releases
+      - dependency-name: "node"
+        versions: [">= 25, < 26"]
+    commit-message:
+      prefix: "chore"
+      include: "scope"
   - package-ecosystem: "helm"
     directories:
       - "/**"
