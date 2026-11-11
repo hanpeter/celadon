@@ -28,6 +28,10 @@ updates:
       - "/**"
     schedule:
       interval: "weekly"
+    ignore:
+      # Production runs Postgres 17; keep the chart in lockstep
+      - dependency-name: "postgres"
+        versions: [">= 18"]
     commit-message:
       prefix: "chore"
       include: "scope"
