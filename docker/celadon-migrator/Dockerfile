@@ -9,12 +9,20 @@ RUN python3 -m venv /opt/poetry && \
 
 WORKDIR /celadon
 
-COPY pyproject.toml poetry.lock ./
+# Copy dependency files and README
+COPY pyproject.toml poetry.lock README.md ./
+
+# Install dependencies
 RUN poetry install --with migrate --without dev --no-root
 
-COPY celadon/ ./celadon/
-COPY README.md ./
+# Set the package version from the release tag
+ARG VERSION=0.0.0
+RUN poetry version "${VERSION}"
 
+# Copy application code
+COPY celadon/ ./celadon/
+
+# Install application
 RUN poetry install --with migrate --without dev
 
 # Fix Python symlinks to match distroless Python path

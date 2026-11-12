@@ -1,6 +1,7 @@
 [project]
 name = "celadon"
-version = "0.2.0"
+# Placeholder: CI sets the real version from the git tag at build time
+version = "0.0.0"
 description = "API server for customer management"
 authors = [
     { name = "Peter Han", email = "git@peterhan.ca" },
@@ -28,6 +29,9 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
 requires-poetry = ">=2.5,<3.0"
+
+[tool.pytest]
+addopts = ["--cov=celadon", "--cov-fail-under=95", "--cov-report=term-missing"]
 
 [dependency-groups]
 dev = [
