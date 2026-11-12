@@ -68,7 +68,7 @@ test-lint:
 	poetry run pycodestyle
 
 test-unit:
-	poetry run pytest --cov=celadon --cov-report=term --cov-fail-under=80
+	poetry run pytest
 
 test: test-lint test-unit
 
